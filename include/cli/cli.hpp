@@ -50,9 +50,19 @@ namespace cli
     class CommandLineInterpreter
     {
         public:
-            typedef Parser<std::string::iterator> ParserType;
             typedef CommandLineInterpreter<Parser, Command> ClassType;
+
+            typedef Parser<std::string::iterator> ParserType;
             typedef Command CommandType;
+
+            // Callback functions signatures
+            typedef bool (RunCommandCallback)(ClassType*, const Command&);
+            typedef bool (RunEmptyLineCallback)(ClassType*);
+            typedef void (PreRunCommandCallback)(ClassType*, std::string&);
+            typedef bool (PostRunCommandCallback)
+                (ClassType*, bool, const std::string&);
+            typedef void (PreLoopCallback)(ClassType*);
+            typedef void (PostLoopCallback)(ClassType*);
 
             CommandLineInterpreter(
                 const std::string &historyFileName = std::string(),
@@ -106,13 +116,12 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
-            boost::function<bool (ClassType*, const Command&)> runCommand_;
-            boost::function<bool (ClassType*)> runEmptyLine_;
-            boost::function<void (ClassType*, std::string&)> preRunCommand_;
-            boost::function<bool (
-                ClassType*, bool, const std::string&)> postRunCommand_;
-            boost::function<void (ClassType*)> preLoop_;
-            boost::function<void (ClassType*)> postLoop_;
+            boost::function<RunCommandCallback> runCommand_;
+            boost::function<RunEmptyLineCallback> runEmptyLine_;
+            boost::function<PreRunCommandCallback> preRunCommand_;
+            boost::function<PostRunCommandCallback> postRunCommand_;
+            boost::function<PreLoopCallback> preLoop_;
+            boost::function<PostLoopCallback> postLoop_;
 
             //
             // Internal callback function setter

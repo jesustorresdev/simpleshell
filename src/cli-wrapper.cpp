@@ -299,8 +299,7 @@ bool cliSetRunCommandCallback(CommandLineInterpreter cli,
     cliRunCommandCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<bool (InterpreterType*,
-        const InterpreterType::CommandType&)>
+    boost::function<InterpreterType::RunCommandCallback>
         function = RunCommandCallbackWrapper(callback);
     try {
         interpreter->setCallback("runCommand", function);
@@ -315,7 +314,7 @@ bool cliSetRunEmptyLineCallback(CommandLineInterpreter cli,
     cliRunEmptyLineCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<bool (InterpreterType*)>
+    boost::function<InterpreterType::RunEmptyLineCallback>
         function = RunEmptyLineCallbackWrapper(callback);
     try {
         interpreter->setCallback("runEmptyLine", function);
@@ -330,7 +329,7 @@ bool cliSetPreRunCommandCallback(CommandLineInterpreter cli,
     cliPreRunCommandCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<void (InterpreterType*, std::string&)>
+    boost::function<InterpreterType::PreRunCommandCallback>
         function = PreRunCommandCallbackWrapper(callback);
     try {
         interpreter->setCallback("preRunCommand", function);
@@ -345,7 +344,7 @@ bool cliSetPostRunCommandCallback(CommandLineInterpreter cli,
     cliPostRunCommandCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<bool (InterpreterType*, bool, const std::string&)>
+    boost::function<InterpreterType::PostRunCommandCallback>
         function = PostRunCommandCallbackWrapper(callback);
     try {
         interpreter->setCallback("postRunCommand", function);
@@ -360,7 +359,7 @@ bool cliSetPreLoopCallback(CommandLineInterpreter cli,
     cliPreLoopCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<void (InterpreterType*)>
+    boost::function<InterpreterType::PreLoopCallback>
         function = PrePostLoopCallbackWrapper(callback);
     try {
         interpreter->setCallback("preLoop", function);
@@ -375,7 +374,7 @@ bool cliSetPostLoopCallback(CommandLineInterpreter cli,
     cliPostLoopCallback callback)
 {
     InterpreterType* interpreter = reinterpret_cast<InterpreterType*>(cli);
-    boost::function<void (InterpreterType*)>
+    boost::function<InterpreterType::PostLoopCallback>
         function = PrePostLoopCallbackWrapper(callback);
     try {
         interpreter->setCallback("postLoop", function);
