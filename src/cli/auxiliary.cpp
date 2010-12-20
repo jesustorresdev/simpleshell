@@ -22,6 +22,8 @@
 #include <string>
 #include <unistd.h>
 
+#include <boost/shared_array.hpp>
+
 #include <cli/auxiliary.hpp>
 
 #include "fileno.hpp"
@@ -53,10 +55,12 @@ namespace cli { namespace auxiliary
         return false;
     }
 
-    const char** stdVectorStringToArgV(const std::vector<std::string> &strings)
+    boost::shared_array<const char*>
+    stdVectorStringToArgV(const std::vector<std::string> &strings)
     {
         int length = strings.size();
-        const char** argv = new const char*[length];
+        boost::shared_array<const char*> argv =
+            boost::shared_array(new const char*[length]);
         for(int i = 0; i < length; i++) {
             argv[i] = strings[i].c_str();
         }

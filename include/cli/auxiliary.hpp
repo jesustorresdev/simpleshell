@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_array.hpp>
+
 namespace cli { namespace auxiliary
 {
 
@@ -30,7 +32,7 @@ namespace cli { namespace auxiliary
 
     bool isStreamTty(const std::ios& stream);
 
-    const char** stdVectorStringToArgV(
+    boost::shared_array<const char*> stdVectorStringToArgV(
         const std::vector<std::string> &strings);
 
 }}
