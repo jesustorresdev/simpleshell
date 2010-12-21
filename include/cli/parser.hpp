@@ -114,7 +114,6 @@ namespace cli { namespace parser
             enum TypeOfRedirection
             {
                 TRUNCATED_INPUT,    // command <filename
-                APPENDED_INPUT,     // command <<filename
                 TRUNCATED_OUTPUT,   // command >filename
                 APPENDED_OUTPUT     // command >>filename
             };
@@ -233,7 +232,6 @@ namespace cli { namespace parser
             {
                 add
                     ("<",  Command::StdioRedirection::TRUNCATED_INPUT)
-                    ("<<", Command::StdioRedirection::APPENDED_INPUT)
                     (">",  Command::StdioRedirection::TRUNCATED_OUTPUT)
                     (">>", Command::StdioRedirection::APPENDED_OUTPUT)
                 ;

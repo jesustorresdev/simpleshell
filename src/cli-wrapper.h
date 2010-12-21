@@ -37,7 +37,6 @@ struct Command
         enum TypeOfRedirection
         {
             TRUNCATED_INPUT,    // command <filename
-            APPENDED_INPUT,     // command <<filename
             TRUNCATED_OUTPUT,   // command >filename
             APPENDED_OUTPUT     // command >>filename
 
