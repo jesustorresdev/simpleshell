@@ -46,16 +46,15 @@ interface
     
     { Valid values for StdioRedirection.typeOfRedirection }
     const
-        TRUNCATED_INPUT_REDIRECTION = 0;
-        APPENDED_INPUT_REDIRECTION = 1;
-        TRUNCATED_OUTPUT_REDIRECTION = 2;
-        APPENDED_OUTPUT_REDIRECTION = 3;
+        TRUNCATED_INPUT_REDIRECTION = 0;    (* command <filename  *)
+        TRUNCATED_OUTPUT_REDIRECTION = 1;   (* command >filename  *)
+        APPENDED_OUTPUT_REDIRECTION = 2;    (* command >>filename *)
     
     { Valid values for Command.typeOfTerminator }
     const
-        NORMAL_TERMINATOR = 0;
-        BACKGROUNDED_TERMINATOR = 1;
-        PIPED_TERMINATOR = 2;
+        NORMAL_TERMINATOR = 0;              (* command ; *)
+        BACKGROUNDED_TERMINATOR = 1;        (* command & *)
+        PIPED_TERMINATOR = 2;               (* command1 | command2 *)
 
     { Command-line interpreter object }
     type

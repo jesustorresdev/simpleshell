@@ -184,10 +184,6 @@ struct RunCommandCallbackWrapper : public BaseCallbackWrapper
                 destination.redirections[i].type =
                     Command::StdioRedirection::TRUNCATED_INPUT;
                 break;
-            case cli::parser::Command::StdioRedirection::APPENDED_INPUT:
-                destination.redirections[i].type =
-                    Command::StdioRedirection::APPENDED_INPUT;
-                break;
             case cli::parser::Command::StdioRedirection::TRUNCATED_OUTPUT:
                 destination.redirections[i].type =
                     Command::StdioRedirection::TRUNCATED_OUTPUT;
