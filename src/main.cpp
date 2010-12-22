@@ -34,11 +34,11 @@ typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
 bool runCommandCallback(InterpreterType* interpreter,
     const InterpreterType::CommandType& commands)
 {
-    if (commands[0].arguments[0] == "exit") {
-        return true;
-    }
-    else {
-        interpreter->getOutStream() << commands[0].arguments[0] << std::endl;
+    if (commands.size() != 0) {
+        interpreter->getOutStream() << commands << std::endl;
+        if (commands[0].arguments[0] == "exit") {
+            return true;
+        }
     }
     return false;
 }
