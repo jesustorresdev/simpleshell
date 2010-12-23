@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include <cli/auxiliary.hpp>
 #include <cli/cli.hpp>
 #include <cli/simple_shell_parser.hpp>
 
@@ -45,8 +46,6 @@ bool runCommandCallback(InterpreterType* interpreter,
 
 int main(int argc, char** argv)
 {
-    using namespace cli;
-
     InterpreterType interpreter;
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);

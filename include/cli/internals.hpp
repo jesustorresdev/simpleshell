@@ -1,5 +1,5 @@
 /*
- * auxiliary.hpp - Auxiliary internal functions
+ * internals.hpp - Auxiliary internal functions
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,25 +16,18 @@
  * limitations under the License.
  */
 
-#ifndef AUXILIARY_HPP_
-#define AUXILIARY_HPP_
+#ifndef INTERALS_HPP_
+#define INTERALS_HPP_
 
 #include <iostream>
 #include <string>
-#include <vector>
 
-#include <boost/shared_array.hpp>
-
-namespace cli { namespace auxiliary
+namespace cli { namespace internals
 {
 
     bool isLineEmpty(const std::string& line);
-
     bool isStreamTty(const std::ios& stream);
-
-    boost::shared_array<const char*> stdVectorStringToArgV(
-        const std::vector<std::string> &strings);
 
 }}
 
-#endif /* AUXILIARY_HPP_ */
+#endif /* INTERALS_HPP_ */

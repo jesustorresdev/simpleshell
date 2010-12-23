@@ -1,5 +1,5 @@
 /*
- * auxiliary.cpp - Auxiliary internal functions
+ * internals.cpp - Auxiliary internal functions
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -19,20 +19,14 @@
 #include <algorithm>
 #include <iostream>
 #include <locale>
-#include <string>
 #include <unistd.h>
 
-#include <boost/shared_array.hpp>
-
-#include <cli/auxiliary.hpp>
+#include <cli/internals.hpp>
 
 #include "fileno.hpp"
 
-namespace cli { namespace auxiliary
+namespace cli { namespace internals
 {
-    //
-    // Auxiliary functions
-    //
 
     bool isCharNoSpace(char c)
     {
@@ -55,15 +49,4 @@ namespace cli { namespace auxiliary
         return false;
     }
 
-    boost::shared_array<const char*>
-    stdVectorStringToArgV(const std::vector<std::string> &strings)
-    {
-        int length = strings.size();
-        boost::shared_array<const char*> argv =
-            boost::shared_array<const char*>(new const char*[length]);
-        for(int i = 0; i < length; i++) {
-            argv[i] = strings[i].c_str();
-        }
-        return argv;
-    }
 }}

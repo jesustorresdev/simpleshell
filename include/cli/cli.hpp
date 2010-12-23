@@ -32,9 +32,9 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
-#include <cli/auxiliary.hpp>
 #include <cli/base_parser.hpp>
 #include <cli/exception.hpp>
+#include <cli/internals.hpp>
 #include <cli/readline.hpp>
 
 namespace cli
@@ -187,7 +187,7 @@ namespace cli
     {
         preLoop_(this);
 
-        if (auxiliary::isStreamTty(out_)) {
+        if (internals::isStreamTty(out_)) {
             if (! introText_.empty()) {
                 out_ << introText_ << std::endl;
             }
@@ -212,7 +212,7 @@ namespace cli
     {
         preRunCommand_(this, line);
 
-        if (auxiliary::isLineEmpty(line)) {
+        if (internals::isLineEmpty(line)) {
             return runEmptyLine_(this);
         }
         else {

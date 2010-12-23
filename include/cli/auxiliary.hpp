@@ -1,5 +1,5 @@
 /*
- * auxiliary.hpp - Auxiliary internal functions
+ * auxiliary.hpp - Auxiliary public functions
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -28,13 +28,31 @@
 namespace cli { namespace auxiliary
 {
 
-    bool isLineEmpty(const std::string& line);
-
-    bool isStreamTty(const std::ios& stream);
-
     boost::shared_array<const char*> stdVectorStringToArgV(
         const std::vector<std::string> &strings);
 
 }}
+
+namespace std
+{
+
+    template <typename CharT, typename Traits, typename T, typename Alloc>
+    basic_ostream<CharT, Traits>& operator<<(basic_ostream<CharT, Traits>& out,
+        const vector<T, Alloc>& vector)
+    {
+        out << "[";
+
+        typename std::vector<T, Alloc>::const_iterator iter = vector.begin();
+        if (iter != vector.end()) {
+            out << *iter;
+            for (iter += 1; iter < vector.end(); ++iter) {
+                out << ", " << *iter;
+            }
+        }
+
+        return out << "]";
+    }
+
+}
 
 #endif /* AUXILIARY_HPP_ */

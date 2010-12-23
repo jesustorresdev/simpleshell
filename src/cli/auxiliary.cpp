@@ -1,5 +1,5 @@
 /*
- * auxiliary.cpp - Auxiliary internal functions
+ * auxiliary.cpp - Auxiliary public functions
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,11 +16,8 @@
  * limitations under the License.
  */
 
-#include <algorithm>
-#include <iostream>
-#include <locale>
 #include <string>
-#include <unistd.h>
+#include <vector>
 
 #include <boost/shared_array.hpp>
 
@@ -30,30 +27,6 @@
 
 namespace cli { namespace auxiliary
 {
-    //
-    // Auxiliary functions
-    //
-
-    bool isCharNoSpace(char c)
-    {
-        return ! std::isspace(c, std::locale());
-    }
-
-    bool isLineEmpty(const std::string& line)
-    {
-        std::string::const_iterator first;
-        first = std::find_if(line.begin(), line.end(), isCharNoSpace);
-        return first == line.end() ? true : false;
-    }
-
-    bool isStreamTty(const std::ios& stream)
-    {
-        int fd = ::fileno(stream);
-        if (fd > 0) {
-            return ::isatty(fd) != 0 ? true : false;
-        }
-        return false;
-    }
 
     boost::shared_array<const char*>
     stdVectorStringToArgV(const std::vector<std::string> &strings)
@@ -66,4 +39,5 @@ namespace cli { namespace auxiliary
         }
         return argv;
     }
+
 }}

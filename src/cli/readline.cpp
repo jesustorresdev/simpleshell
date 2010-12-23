@@ -23,7 +23,7 @@
 
 #include <boost/system/error_code.hpp>
 
-#include <cli/auxiliary.hpp>
+#include <cli/internals.hpp>
 #include <cli/readline.hpp>
 
 #include "fileno.hpp"
@@ -151,13 +151,13 @@ namespace cli { namespace readline
         }
 
         // Set the input and output streams for readline
-        if (readlineLibrary_ && auxiliary::isStreamTty(in)) {
+        if (readlineLibrary_ && internals::isStreamTty(in)) {
             readlineLibrary_->setInStream(in);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
             }
         }
-        if (readlineLibrary_ && auxiliary::isStreamTty(out)) {
+        if (readlineLibrary_ && internals::isStreamTty(out)) {
             readlineLibrary_->setOutStream(out);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
@@ -181,13 +181,13 @@ namespace cli { namespace readline
     {
         if (readlineLibrary_) {
             bool isOk = readlineLibrary_->readLine(line, prompt);
-            if (isOk && (! auxiliary::isLineEmpty(line))) {
+            if (isOk && (! internals::isLineEmpty(line))) {
                 readlineLibrary_->addHistory(line);
             }
             return isOk;
         }
         else {
-            if (auxiliary::isStreamTty(out_)) {
+            if (internals::isStreamTty(out_)) {
                 out_ << prompt;
             }
             std::getline(in_, line);
