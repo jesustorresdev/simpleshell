@@ -16,5 +16,13 @@
 # limitations under the License.
 #
 
-ADD_LIBRARY(cli STATIC auxiliary.cpp dl.cpp fileno.cpp readline.cpp)
-SET_TARGET_PROPERTIES(cli PROPERTIES COMPILE_FLAGS -fPIC)
+SET (CLI_SOURCE ${CLI_SOURCE} auxiliary.cpp dl.cpp fileno.cpp readline.cpp)
+
+# Build static library
+ADD_LIBRARY(cli STATIC ${CLI_SOURCE})
+#SET_TARGET_PROPERTIES(cli PROPERTIES COMPILE_FLAGS -fPIC)
+
+# Build shared library
+ADD_LIBRARY(cli-shared SHARED ${CLI_SOURCE})
+TARGET_LINK_LIBRARIES(cli-shared ${CLI_LINK_LIBS})
+SET_TARGET_PROPERTIES(cli-shared PROPERTIES OUTPUT_NAME cli)

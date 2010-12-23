@@ -1,4 +1,0 @@
-#!/bin/sh
-
-SCRIPT_PATH="$(dirname $(readlink -f $0))"
-exec "$SCRIPT_PATH/../build/bin/simpleshell"

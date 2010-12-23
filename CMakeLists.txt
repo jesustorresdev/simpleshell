@@ -27,7 +27,7 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules")
 SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
 SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/lib")
 
-SET (DEMO_LIBS ${DEMO_LIBS} boost_system dl)
+SET (CLI_LINK_LIBS ${CLI_LINK_LIBS} boost_system dl)
 
 # Find Boost. It is a requirement for the library
 ## TODO: The library requires all the includes but only links against
@@ -41,7 +41,7 @@ SET (DEMO_LIBS ${DEMO_LIBS} boost_system dl)
 # Compiler options
 ADD_DEFINITIONS(-O0 -g -Wall -fmessage-length=0)
 
-# Parser debugging
+# Enable parser debugging
 #ADD_DEFINITIONS(-DBOOST_SPIRIT_DEBUG) 
 
 # Build all the project

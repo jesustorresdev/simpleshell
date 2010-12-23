@@ -1,4 +1,0 @@
-#!/bin/sh
-
-SCRIPT_PATH="$(dirname $(readlink -f $0))"
-LD_LIBRARY_PATH="$SCRIPT_PATH/../build/lib" exec "$SCRIPT_PATH/../build/bin/simpleshell-pas"
