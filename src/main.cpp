@@ -19,7 +19,7 @@
 #include <vector>
 
 #include <cli/cli.hpp>
-#include <cli/parser.hpp>
+#include <cli/simple_shell_parser.hpp>
 
 #include <boost/function.hpp>
 

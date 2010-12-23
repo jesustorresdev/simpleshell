@@ -32,9 +32,9 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
-#include <cli/exception.hpp>
 #include <cli/auxiliary.hpp>
-#include <cli/parser.hpp>
+#include <cli/base_parser.hpp>
+#include <cli/exception.hpp>
 #include <cli/readline.hpp>
 
 namespace cli

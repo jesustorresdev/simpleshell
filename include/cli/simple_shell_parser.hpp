@@ -1,5 +1,5 @@
 /*
- * parser.hpp - Example parsers for the command line interpreter framework
+ * simple_shell_parser.hpp - Example parser to make a simple shell
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef PARSER_HPP_
-#define PARSER_HPP_
+#ifndef SIMPLE_SHELL_PARSER_HPP_
+#define SIMPLE_SHELL_PARSER_HPP_
 
 #include <string>
 #include <vector>
@@ -29,80 +29,16 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <cli/exception.hpp>
+#include <cli/base_parser.hpp>
 #include <cli/standard.hpp>
 
 namespace cli { namespace parser
 {
     //
-    // Class BaseParser
+    // Class Command
     //
-
-    struct BaseParser
-    {
-        template <typename Signature>
-        void setCallback(const std::string& callbackName,
-            const boost::function<Signature>& function);
-    };
-
-    template <typename Signature>
-    void BaseParser::setCallback(const std::string& callbackName,
-        const boost::function<Signature>& function)
-    {
-        throw cli::exception::UnknownCallbackException(callbackName);
-    }
-}}
-
-namespace cli { namespace parsers
-{
-    namespace qi = boost::spirit::qi;
-    namespace ascii = boost::spirit::ascii;
-
-    //
-    // Class SimpleParser
-    //
-
-    template<typename Iterator>
-    struct SimpleParser
-        : qi::grammar<Iterator, std::vector<std::string>(), ascii::space_type>
-    {
-        SimpleParser() : SimpleParser::base_type(start)
-        {
-            using qi::lexeme;
-            using ascii::char_;
-            using ascii::space;
-
-            // TODO: Non-ascii characters support
-            escape %= lexeme['\\' >> char_];
-            word %= lexeme[+(escape | (char_ - space))];
-            quoted_string %= lexeme['\'' >> *(char_ - '\'') >> '\''];
-            double_quoted_string %= lexeme['"' >> *(char_ - '"') >> '"'];
-            argument %= quoted_string | double_quoted_string | word;
-            start = +argument;
-
-//            BOOST_SPIRIT_DEBUG_NODE(word);
-//            BOOST_SPIRIT_DEBUG_NODE(quoted_string);
-//            BOOST_SPIRIT_DEBUG_NODE(double_quoted_string);
-//            BOOST_SPIRIT_DEBUG_NODE(argument);
-            BOOST_SPIRIT_DEBUG_NODE(start);
-        }
-
-        qi::rule<Iterator, char()> escape;
-        qi::rule<Iterator, std::string(), ascii::space_type> word;
-        qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-        qi::rule<Iterator, std::string(), ascii::space_type> double_quoted_string;
-        qi::rule<Iterator, std::string(), ascii::space_type> argument;
-        qi::rule<Iterator, std::vector<std::string>(), ascii::space_type> start;
-    };
-}}
-
-namespace cli { namespace parser
-{
-    //
-    // Struct Command
-    //
-    // Stores the information required for command execution that is provided
-    // by the parser SimpleShellParser.
+    // Stores the information provided by the parser SimpleShellParser
+    // that is required for command execution.
     //
 
     struct Command
@@ -159,8 +95,8 @@ namespace cli { namespace parser
 }}
 
 //
-// Adaptors from Command structs to the Boost.Fusion sequences required by
-// the parser SimpleShellParser. Must be defined at global scope.
+// Adaptors from Command classes to Boost.Fusion sequences. They are required
+// by the parser SimpleShellParser. Must be defined at global scope.
 //
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -199,8 +135,6 @@ namespace cli { namespace parser
             using ascii::space;
             using phoenix::push_back;
 
-            // TODO: Environment variables substitution
-            // TODO: Non-ascii characters support
             escape %= lexeme['\\' >> char_];
             word %= lexeme[+(escape
                 | (char_ - space - redirectors - terminators))];
@@ -264,4 +198,4 @@ namespace cli { namespace parser
     };
 }}
 
-#endif /* PARSER_HPP_ */
+#endif /* SIMPLE_SHELL_PARSER_HPP_ */
