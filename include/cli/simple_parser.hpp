@@ -1,6 +1,6 @@
 /*
- * simple_parser.hpp - Example parser that only splits the command arguments
- *                     and supports quoted strings
+* simple_parser.hpp - Parser that only splits the command arguments and
+ *                     supports quoted strings
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -26,8 +26,6 @@
 //#define BOOST_SPIRIT_DEBUG
 
 #include <boost/spirit/include/qi.hpp>
-
-#include <cli/base_parser.hpp>
 
 namespace cli { namespace parsers
 {

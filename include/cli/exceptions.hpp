@@ -47,21 +47,6 @@ namespace cli { namespace exceptions
         private:
             std::string callbackName_;
     };
-
-    //
-    // Class IncompatibleSignatureException
-    //
-
-    struct IncompatibleSignatureException : public std::exception
-    {
-        IncompatibleSignatureException() : exception() {}
-        ~IncompatibleSignatureException() throw() {}
-
-        virtual const char* what() const throw()
-        {
-            return "Incompatible callback function signature";
-        }
-    };
 }}
 
 #endif /* EXCEPTIONS_HPP_ */

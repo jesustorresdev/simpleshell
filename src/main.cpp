@@ -19,14 +19,14 @@
 #include <vector>
 
 #include <cli/auxiliary.hpp>
+#include <cli/callbacks.hpp>
 #include <cli/cli.hpp>
 #include <cli/simple_shell_parser.hpp>
-
-#include <boost/function.hpp>
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
                           "Copyright 2010 Jesús Torres <jmtorres@ull.es>\n";
+
 const char PROMPT_TEXT[] = "$ ";
 
 typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
@@ -50,9 +50,8 @@ int main(int argc, char** argv)
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);
 
-    boost::function<bool (InterpreterType*,
-        const InterpreterType::CommandType&)> callback = &runCommandCallback;
-    interpreter.setCallback("runCommand", callback);
+    interpreter.setCallback<cli::callbacks::RunCommandCallback>(
+        &runCommandCallback);
 
     interpreter.loop();
 

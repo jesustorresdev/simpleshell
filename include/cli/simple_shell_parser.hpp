@@ -1,5 +1,5 @@
 /*
- * simple_shell_parser.hpp - Example parser to make a simple shell
+ * simple_shell_parser.hpp - Parser designed to make simple shells
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -28,8 +28,6 @@
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/qi.hpp>
-
-#include <cli/base_parser.hpp>
 
 namespace cli { namespace parser
 {

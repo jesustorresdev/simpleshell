@@ -28,12 +28,8 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
 
-#include <cli/base_parser.hpp>
-#include <cli/exceptions.hpp>
+#include <cli/callbacks.hpp>
 #include <cli/internals.hpp>
 #include <cli/readline.hpp>
 
@@ -55,20 +51,27 @@ namespace cli
             typedef Parser<std::string::iterator> ParserType;
             typedef Command CommandType;
 
-            // Callback functions signatures
-            typedef bool (RunCommandCallback)(ClassType*, const Command&);
-            typedef bool (RunEmptyLineCallback)(ClassType*);
-            typedef void (PreRunCommandCallback)(ClassType*, std::string&);
-            typedef bool (PostRunCommandCallback)
-                (ClassType*, bool, const std::string&);
-            typedef void (PreLoopCallback)(ClassType*);
-            typedef void (PostLoopCallback)(ClassType*);
+            // Callback functions types
+            typedef typename callbacks::RunCommandCallback<ClassType>::Type
+                RunCommandCallback;
+            typedef typename callbacks::RunEmptyLineCallback<ClassType>::Type
+                RunEmptyLineCallback;
+            typedef typename callbacks::PreRunCommandCallback<ClassType>::Type
+                PreRunCommandCallback;
+            typedef typename callbacks::PostRunCommandCallback<ClassType>::Type
+                PostRunCommandCallback;
+            typedef typename callbacks::PreLoopCallback<ClassType>::Type
+                PreLoopCallback;
+            typedef typename callbacks::PostLoopCallback<ClassType>::Type
+                PostLoopCallback;
 
+            // Constructor
             CommandLineInterpreter(
                 const std::string &historyFileName = std::string(),
                 std::istream& in = std::cin,
                 std::ostream& out = std::cout);
 
+            // Methods to interpret command-line input
             void loop();
             bool interpretOneLine(std::string line);
 
@@ -88,9 +91,8 @@ namespace cli
             void setPromptText(const std::string& prompt)
                 { promptText_ = prompt; }
 
-            template <typename Signature>
-            void setCallback(const std::string& callbackName,
-                const boost::function<Signature>& function);
+            template <template <typename> class Callback, typename Functor>
+            void setCallback(Functor function);
 
         protected:
             virtual bool defaultRunCommand(const Command& command);
@@ -116,6 +118,7 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
+            // Callback functions objects
             boost::function<RunCommandCallback> runCommand_;
             boost::function<RunEmptyLineCallback> runEmptyLine_;
             boost::function<PreRunCommandCallback> preRunCommand_;
@@ -123,46 +126,10 @@ namespace cli
             boost::function<PreLoopCallback> preLoop_;
             boost::function<PostLoopCallback> postLoop_;
 
-            //
-            // Internal callback function setter
-            //
-
-            template <typename S1, typename S2>
-            typename boost::enable_if<typename boost::is_same<S1, S2>::type,
-                boost::function<S1>& >::type
-            internalSetCallback(boost::function<S1>& function1,
-                const boost::function<S2>& function2)
-            {
-                function1 = function2;
-                return function1;
-            }
-
-            template <typename S1, typename S2>
-            typename boost::disable_if<typename boost::is_same<S1, S2>::type,
-                boost::function<S1>& >::type
-            internalSetCallback(boost::function<S1>& function1,
-                const boost::function<S2>& function2)
-            {
-                throw exceptions::IncompatibleSignatureException();
-            }
-
-            //
-            // Dispatching of setCallback() calls to the parser
-            //
-
-            template <typename T>
-            typename boost::enable_if<
-                typename boost::is_base_of<parser::BaseParser,
-                    ParserType>::type, T>::type
-            parserSetCallback(const std::string& callbackName, T& function)
-                { lineParser_->setCallback(callbackName, function); }
-
-            template <typename T>
-            typename boost::disable_if<
-                typename boost::is_base_of<parser::BaseParser,
-                    ParserType>::type, void>::type
-            parserSetCallback(const std::string& callbackName, T& function)
-                { throw exceptions::UnknownCallbackException(callbackName); }
+            template <template <typename> class Callback>
+            template <typename Interpreter, typename Functor>
+            friend void cli::callbacks::SetCallbackImpl<Callback>::
+                setCallback(Interpreter&, Functor);
     };
 
     template <template <typename> class Parser, typename Command>
@@ -237,35 +204,6 @@ namespace cli
     }
 
     template <template <typename> class Parser, typename Command>
-    template <typename Signature>
-    void CommandLineInterpreter<Parser, Command>::setCallback(
-        const std::string& callbackName,
-        const boost::function<Signature>& function)
-    {
-        if (callbackName == "runCommand") {
-            internalSetCallback(runCommand_, function);
-        }
-        else if (callbackName == "runEmptyLine") {
-            internalSetCallback(runEmptyLine_, function);
-        }
-        else if (callbackName == "preRunCommand") {
-            internalSetCallback(preRunCommand_, function);
-        }
-        else if (callbackName == "postRunCommand") {
-            internalSetCallback(postRunCommand_, function);
-        }
-        else if (callbackName == "preLoop") {
-            internalSetCallback(preLoop_, function);
-        }
-        else if (callbackName == "postLoop") {
-            internalSetCallback(postLoop_, function);
-        }
-        else {
-            parserSetCallback(callbackName, function);
-        }
-    }
-
-    template <template <typename> class Parser, typename Command>
     bool CommandLineInterpreter<Parser, Command>::defaultRunCommand(
             const Command& command)
     {
@@ -286,6 +224,13 @@ namespace cli
         bool isFinished, const std::string& line)
     {
         return isFinished;
+    }
+
+    template <template <typename> class Parser, typename Command>
+    template <template <typename> class Callback, typename Functor>
+    void CommandLineInterpreter<Parser, Command>::setCallback(Functor function)
+    {
+        callbacks::SetCallbackImpl<Callback>::setCallback(*this, function);
     }
 }
 
