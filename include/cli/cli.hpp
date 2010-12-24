@@ -33,7 +33,7 @@
 #include <boost/utility/enable_if.hpp>
 
 #include <cli/base_parser.hpp>
-#include <cli/exception.hpp>
+#include <cli/exceptions.hpp>
 #include <cli/internals.hpp>
 #include <cli/readline.hpp>
 
@@ -143,7 +143,7 @@ namespace cli
             internalSetCallback(boost::function<S1>& function1,
                 const boost::function<S2>& function2)
             {
-                throw exception::IncompatibleSignatureException();
+                throw exceptions::IncompatibleSignatureException();
             }
 
             //
@@ -162,7 +162,7 @@ namespace cli
                 typename boost::is_base_of<parser::BaseParser,
                     ParserType>::type, void>::type
             parserSetCallback(const std::string& callbackName, T& function)
-                { throw exception::UnknownCallbackException(callbackName); }
+                { throw exceptions::UnknownCallbackException(callbackName); }
     };
 
     template <template <typename> class Parser, typename Command>

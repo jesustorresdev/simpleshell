@@ -20,7 +20,7 @@
 #ifndef BASE_PARSER_HPP_
 #define BASE_PARSER_HPP_
 
-#include <cli/exception.hpp>
+#include <cli/exceptions.hpp>
 
 namespace cli { namespace parser
 {
@@ -39,7 +39,7 @@ namespace cli { namespace parser
     void BaseParser::setCallback(const std::string& callbackName,
         const boost::function<Signature>& function)
     {
-        throw cli::exception::UnknownCallbackException(callbackName);
+        throw cli::exceptions::UnknownCallbackException(callbackName);
     }
 }}
 

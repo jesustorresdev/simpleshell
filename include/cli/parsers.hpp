@@ -1,5 +1,5 @@
 /*
- * parser.hpp - Example parsers for the command line interpreter framework
+ * parsers.hpp - Example parsers for the command line interpreter framework
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-#ifndef PARSER_HPP_
-#define PARSER_HPP_
+#ifndef PARSERS_HPP_
+#define PARSERS_HPP_
 
 #include <cli/simple_parser.hpp>
 #include <cli/simple_shell_parser.hpp>
 
-#endif /* PARSER_HPP_ */
+#endif /* PARSERS_HPP_ */

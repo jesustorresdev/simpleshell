@@ -1,5 +1,5 @@
 /*
- * exception.hpp - Framework exceptions
+ * exceptions.hpp - Framework exceptions
  *
  *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-#ifndef EXCEPTION_HPP_
-#define EXCEPTION_HPP_
+#ifndef EXCEPTIONS_HPP_
+#define EXCEPTIONS_HPP_
 
 #include <exception>
 
-namespace cli { namespace exception
+namespace cli { namespace exceptions
 {
     //
     // Class UnknownCallbackException
@@ -64,4 +64,4 @@ namespace cli { namespace exception
     };
 }}
 
-#endif /* EXCEPTION_HPP_ */
+#endif /* EXCEPTIONS_HPP_ */
