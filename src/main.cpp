@@ -32,7 +32,7 @@ const char PROMPT_TEXT[] = "$ ";
 typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
     std::vector<cli::parser::Command> > InterpreterType;
 
-bool runCommandCallback(InterpreterType* interpreter,
+bool doCommandCallback(InterpreterType* interpreter,
     const InterpreterType::CommandType& commands)
 {
     if (commands.size() != 0) {
@@ -50,8 +50,8 @@ int main(int argc, char** argv)
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);
 
-    interpreter.setCallback<cli::callbacks::RunCommandCallback>(
-        &runCommandCallback);
+    interpreter.setCallback<cli::callbacks::DoCommandCallback>(
+        &doCommandCallback);
 
     interpreter.loop();
 

@@ -39,84 +39,84 @@ namespace cli { namespace callbacks
     };
 
     //
-    // RunCommandCallback
+    // DoCommandCallback
     //
 
     template <typename Interpreter>
-    struct RunCommandCallback
+    struct DoCommandCallback
     {
         typedef bool (Type)(Interpreter*,
             const typename Interpreter::CommandType&);
 
-        static const char* name() { return "RunCommand"; }
+        static const char* name() { return "DoCommandCallback"; }
     };
 
     template<>
-    struct SetCallbackImpl<RunCommandCallback>
+    struct SetCallbackImpl<DoCommandCallback>
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.runCommand_ = function; }
+            { interpreter.doCommandCallback_ = function; }
     };
 
     //
-    // RunEmptyLineCallback
+    // EmptyLineCallback
     //
 
     template <typename Interpreter>
-    struct RunEmptyLineCallback
+    struct EmptyLineCallback
     {
         typedef bool (Type)(Interpreter*);
 
-        static const char* name() { return "RunEmptyLine"; }
+        static const char* name() { return "EmptyLineCallback"; }
     };
 
     template<>
-    struct SetCallbackImpl<RunEmptyLineCallback>
+    struct SetCallbackImpl<EmptyLineCallback>
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.runEmptyLine_ = function; }
+            { interpreter.emptyLineCallback_ = function; }
     };
 
     //
-    // PreRunCommandCallback
+    // PreDoCommandCallback
     //
 
     template <typename Interpreter>
-    struct PreRunCommandCallback
+    struct PreDoCommandCallback
     {
         typedef void (Type)(Interpreter*, std::string&);
 
-        static const char* name() { return "PreRunCommand"; }
+        static const char* name() { return "PreDoCommandCallback"; }
     };
 
     template<>
-    struct SetCallbackImpl<PreRunCommandCallback>
+    struct SetCallbackImpl<PreDoCommandCallback>
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.preRunCommand_ = function; }
+            { interpreter.preDoCommandCallback_ = function; }
     };
 
     //
-    // PostRunCommandCallback
+    // PostDoCommandCallback
     //
 
     template <typename Interpreter>
-    struct PostRunCommandCallback
+    struct PostDoCommandCallback
     {
         typedef bool (Type)(Interpreter*, bool, const std::string&);
 
-        static const char* name() { return "PostRunCommand"; }
+        static const char* name() { return "PostDoCommandCallback"; }
     };
 
     template<>
-    struct SetCallbackImpl<PostRunCommandCallback>
+    struct SetCallbackImpl<PostDoCommandCallback>
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.postRunCommand_ = function; }
+            { interpreter.postDoCommandCallback_ = function; }
     };
 
     //
@@ -128,7 +128,7 @@ namespace cli { namespace callbacks
     {
         typedef void (Type)(Interpreter*);
 
-        static const char* name() { return "PreLoop"; }
+        static const char* name() { return "PreLoopCallback"; }
     };
 
     template<>
@@ -136,7 +136,7 @@ namespace cli { namespace callbacks
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.preLoop_ = function; }
+            { interpreter.preLoopCallback_ = function; }
     };
 
     //
@@ -148,7 +148,7 @@ namespace cli { namespace callbacks
     {
         typedef void (Type)(Interpreter*);
 
-        static const char* name() { return "PostLoop"; }
+        static const char* name() { return "PostLoopCallback"; }
     };
 
     template<>
@@ -156,7 +156,7 @@ namespace cli { namespace callbacks
     {
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
-            { interpreter.postLoop_ = function; }
+            { interpreter.postLoopCallback_ = function; }
     };
 }}
 

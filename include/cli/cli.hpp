@@ -52,14 +52,14 @@ namespace cli
             typedef Command CommandType;
 
             // Callback functions types
-            typedef typename callbacks::RunCommandCallback<ClassType>::Type
-                RunCommandCallback;
-            typedef typename callbacks::RunEmptyLineCallback<ClassType>::Type
-                RunEmptyLineCallback;
-            typedef typename callbacks::PreRunCommandCallback<ClassType>::Type
-                PreRunCommandCallback;
-            typedef typename callbacks::PostRunCommandCallback<ClassType>::Type
-                PostRunCommandCallback;
+            typedef typename callbacks::DoCommandCallback<ClassType>::Type
+                DoCommandCallback;
+            typedef typename callbacks::EmptyLineCallback<ClassType>::Type
+                EmptyLineCallback;
+            typedef typename callbacks::PreDoCommandCallback<ClassType>::Type
+                PreDoCommandCallback;
+            typedef typename callbacks::PostDoCommandCallback<ClassType>::Type
+                PostDoCommandCallback;
             typedef typename callbacks::PreLoopCallback<ClassType>::Type
                 PreLoopCallback;
             typedef typename callbacks::PostLoopCallback<ClassType>::Type
@@ -95,12 +95,12 @@ namespace cli
             void setCallback(Functor function);
 
         protected:
-            virtual bool defaultRunCommand(const Command& command);
-            virtual bool defaultRunEmptyLine();
+            virtual bool defaultDoCommand(const Command& command);
+            virtual bool defaultEmptyLine();
 
             // Hook methods invoked inside interpretOneLine()
-            virtual void defaultPreRunCommand(std::string& line) {};
-            virtual bool defaultPostRunCommand(bool isFinished,
+            virtual void defaultPreDoCommand(std::string& line) {};
+            virtual bool defaultPostDoCommand(bool isFinished,
                 const std::string& line);
 
             // Hook methods invoked once inside loop()
@@ -119,12 +119,12 @@ namespace cli
             std::string lastCommand_;
 
             // Callback functions objects
-            boost::function<RunCommandCallback> runCommand_;
-            boost::function<RunEmptyLineCallback> runEmptyLine_;
-            boost::function<PreRunCommandCallback> preRunCommand_;
-            boost::function<PostRunCommandCallback> postRunCommand_;
-            boost::function<PreLoopCallback> preLoop_;
-            boost::function<PostLoopCallback> postLoop_;
+            boost::function<DoCommandCallback> doCommandCallback_;
+            boost::function<EmptyLineCallback> emptyLineCallback_;
+            boost::function<PreDoCommandCallback> preDoCommandCallback_;
+            boost::function<PostDoCommandCallback> postDoCommandCallback_;
+            boost::function<PreLoopCallback> preLoopCallback_;
+            boost::function<PostLoopCallback> postLoopCallback_;
 
             template <template <typename> class Callback>
             template <typename Interpreter, typename Functor>
@@ -141,18 +141,18 @@ namespace cli
           out_(out),
           readLine_(historyFileName, in, out),
           lineParser_(new ParserType),
-          runCommand_(&ClassType::defaultRunCommand),
-          runEmptyLine_(&ClassType::defaultRunEmptyLine),
-          preRunCommand_(&ClassType::defaultPreRunCommand),
-          postRunCommand_(&ClassType::defaultPostRunCommand),
-          preLoop_(&ClassType::defaultPreLoop),
-          postLoop_(&ClassType::defaultPostLoop)
+          doCommandCallback_(&ClassType::defaultDoCommand),
+          emptyLineCallback_(&ClassType::defaultEmptyLine),
+          preDoCommandCallback_(&ClassType::defaultPreDoCommand),
+          postDoCommandCallback_(&ClassType::defaultPostDoCommand),
+          preLoopCallback_(&ClassType::defaultPreLoop),
+          postLoopCallback_(&ClassType::defaultPostLoop)
     {}
 
     template <template <typename> class Parser, typename Command>
     void CommandLineInterpreter<Parser, Command>::loop()
     {
-        preLoop_(this);
+        preLoopCallback_(this);
 
         if (internals::isStreamTty(out_)) {
             if (! introText_.empty()) {
@@ -170,17 +170,17 @@ namespace cli
                 break;
         }
 
-        postLoop_(this);
+        postLoopCallback_(this);
     }
 
     template <template <typename> class Parser, typename Command>
     bool CommandLineInterpreter<Parser, Command>::interpretOneLine(
         std::string line)
     {
-        preRunCommand_(this, line);
+        preDoCommandCallback_(this, line);
 
         if (internals::isLineEmpty(line)) {
-            return runEmptyLine_(this);
+            return emptyLineCallback_(this);
         }
         else {
             lastCommand_ = line;
@@ -192,8 +192,8 @@ namespace cli
         bool success = qi::phrase_parse(begin, end, *lineParser_,
             ascii::space, command);
         if (success && begin == end) {
-            bool isFinished = runCommand_(this, command);
-            return postRunCommand_(this, isFinished, line);
+            bool isFinished = doCommandCallback_(this, command);
+            return postDoCommandCallback_(this, isFinished, line);
         }
         else {
             std::string no_parsed(begin, end);
@@ -204,14 +204,14 @@ namespace cli
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultRunCommand(
+    bool CommandLineInterpreter<Parser, Command>::defaultDoCommand(
             const Command& command)
     {
         return false;
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultRunEmptyLine()
+    bool CommandLineInterpreter<Parser, Command>::defaultEmptyLine()
     {
         if (! lastCommand_.empty()) {
             return interpretOneLine(lastCommand_);
@@ -220,7 +220,7 @@ namespace cli
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultPostRunCommand(
+    bool CommandLineInterpreter<Parser, Command>::defaultPostDoCommand(
         bool isFinished, const std::string& line)
     {
         return isFinished;
