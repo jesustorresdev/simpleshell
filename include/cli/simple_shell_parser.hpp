@@ -24,10 +24,14 @@
 
 //#define BOOST_SPIRIT_DEBUG
 
+#include <boost/function.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/qi.hpp>
+
+#include <cli/callbacks.hpp>
 
 namespace cli { namespace parser
 {
@@ -119,7 +123,7 @@ namespace cli { namespace parser
     // Class SimpleShellParser
     //
 
-    template<typename Iterator>
+    template <typename Iterator>
     struct SimpleShellParser
         : qi::grammar<Iterator, std::vector<Command>(), ascii::space_type>
     {
@@ -130,29 +134,54 @@ namespace cli { namespace parser
             using qi::lexeme;
             using ascii::char_;
             using ascii::space;
+            using phoenix::begin;
+            using phoenix::bind;
+            using phoenix::end;
+            using phoenix::insert;
             using phoenix::push_back;
 
-            escape %= lexeme['\\' >> char_];
-            word %= lexeme[+(escape
-                | (char_ - space - redirectors - terminators))];
-            quoted_string %= lexeme['\'' >> *(char_ - '\'') >> '\''];
-            double_quoted_string %= lexeme['"' >> *(char_ - '"') >> '"'];
-            argument %= quoted_string | double_quoted_string | word;
-            redirection %= redirectors >> argument;
-            end %= terminators;
-            command %= +(argument - redirection) >> *redirection >> end;
-            last_command %= +(argument - redirection) >> *redirection;
-            start = +command    [push_back(_val, _1)]
-                || last_command [push_back(_val, _1)];
+            escape %= '\\' >> char_;
+            name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
+            variableA %= '$' >>
+                name [bind(&ClassType::variableLookup, *this, _val, _1)];
+            variableB %= "${" >>
+                name [bind(&ClassType::variableLookup, *this, _val, _1)] >>
+                '}';
+            variable %= variableA | variableB;
 
+            quotedString %= lexeme['\'' >> *(char_ - '\'') >> '\''];
+            doubleQuotedString = lexeme['"' >> *(
+                variable    [insert(_val, end(_val), begin(_1), end(_1))] |
+                (
+                    char_('\'')             [push_back(_val, _1)] >>
+                    *((char_ - '\'' - '"')  [push_back(_val, _1)]) >>
+                    char_('\'')             [push_back(_val, _1)]
+                ) |
+                (char_ - '"')               [push_back(_val, _1)]
+            ) >> '"'];
+            word = lexeme[+(
+                variable            [insert(_val, end(_val), begin(_1), end(_1))] |
+                quotedString        [insert(_val, end(_val), begin(_1), end(_1))] |
+                doubleQuotedString  [insert(_val, end(_val), begin(_1), end(_1))] |
+                escape              [push_back(_val, _1)] |
+                (char_ - space)     [push_back(_val, _1)]
+            )];
+
+            redirection %= redirectors >> word;
+            ending %= terminators;
+            command %= +(word - redirection) >> *redirection >> ending;
+            lastCommand %= +(word - redirection) >> *redirection;
+            start = +command    [push_back(_val, _1)] ||
+                    lastCommand [push_back(_val, _1)];
+
+//            BOOST_SPIRIT_DEBUG_NODE(variable);
+//            BOOST_SPIRIT_DEBUG_NODE(quotedString);
+//            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
 //            BOOST_SPIRIT_DEBUG_NODE(word);
-//            BOOST_SPIRIT_DEBUG_NODE(quoted_string);
-//            BOOST_SPIRIT_DEBUG_NODE(double_quoted_string);
-//            BOOST_SPIRIT_DEBUG_NODE(argument);
 //            BOOST_SPIRIT_DEBUG_NODE(redirection);
 //            BOOST_SPIRIT_DEBUG_NODE(end);
 //            BOOST_SPIRIT_DEBUG_NODE(command);
-//            BOOST_SPIRIT_DEBUG_NODE(last_command);
+//            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
@@ -183,16 +212,38 @@ namespace cli { namespace parser
         } terminators;
 
         qi::rule<Iterator, char()> escape;
+        qi::rule<Iterator, std::string()> name;
+        qi::rule<Iterator, std::string()> variableA;
+        qi::rule<Iterator, std::string()> variableB;
+        qi::rule<Iterator, std::string()> variable;
+        qi::rule<Iterator, std::string()> quotedString;
+        qi::rule<Iterator, std::string()> doubleQuotedString;
         qi::rule<Iterator, std::string(), ascii::space_type> word;
-        qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-        qi::rule<Iterator, std::string(), ascii::space_type> double_quoted_string;
         qi::rule<Iterator, std::string(), ascii::space_type> argument;
         qi::rule<Iterator, Command::StdioRedirection(), ascii::space_type> redirection;
-        qi::rule<Iterator, Command::TypeOfTerminator(), ascii::space_type> end;
+        qi::rule<Iterator, Command::TypeOfTerminator(), ascii::space_type> ending;
         qi::rule<Iterator, Command(), ascii::space_type> command;
-        qi::rule<Iterator, Command(), ascii::space_type> last_command;
+        qi::rule<Iterator, Command(), ascii::space_type> lastCommand;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
+
+        typedef SimpleShellParser<Iterator> ClassType;
+        typedef typename callbacks::VariableLookupCallback<ClassType>::Type
+            VariableLookupCallback;
+
+        protected:
+            void variableLookup(std::string &value, const std::string& name);
+
+        private:
+            boost::function<VariableLookupCallback> variableLookupCallback_;
     };
+
+    template <typename Iterator>
+    void SimpleShellParser<Iterator>::variableLookup(std::string& value,
+        const std::string& name)
+    {
+        variableLookupCallback_.empty() ?
+            value.clear() : variableLookupCallback_(value, name);
+    }
 }}
 
 #endif /* SIMPLE_SHELL_PARSER_HPP_ */

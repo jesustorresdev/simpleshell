@@ -19,6 +19,8 @@
 #ifndef CALLBACKS_HPP_
 #define CALLBACKS_HPP_
 
+#include <string>
+
 #include <cli/exceptions.hpp>
 
 namespace cli { namespace callbacks
@@ -157,6 +159,26 @@ namespace cli { namespace callbacks
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
             { interpreter.postLoopCallback_ = function; }
+    };
+
+    //
+    // VariableLookupCallback
+    //
+
+    template <typename Parser>
+    struct VariableLookupCallback
+    {
+        typedef void (Type)(std::string&, const std::string&);
+
+        static const char* name() { return "VariableLookupCallback"; }
+    };
+
+    template<>
+    struct SetCallbackImpl<VariableLookupCallback>
+    {
+        template <typename Interpreter, typename Functor>
+        static void setCallback(Interpreter& interpreter, Functor function)
+            { interpreter.lineParser_->variableLookupCallback_ = function; }
     };
 }}
 
