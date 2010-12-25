@@ -48,22 +48,22 @@ namespace cli { namespace parsers
 
             escape %= lexeme['\\' >> char_];
             word %= lexeme[+(escape | (char_ - space))];
-            quoted_string %= lexeme['\'' >> *(char_ - '\'') >> '\''];
-            double_quoted_string %= lexeme['"' >> *(char_ - '"') >> '"'];
-            argument %= quoted_string | double_quoted_string | word;
+            quotedString %= lexeme['\'' >> *(char_ - '\'') >> '\''];
+            doubleQuotedString %= lexeme['"' >> *(char_ - '"') >> '"'];
+            argument %= quotedString | doubleQuotedString | word;
             start = +argument;
 
 //            BOOST_SPIRIT_DEBUG_NODE(word);
-//            BOOST_SPIRIT_DEBUG_NODE(quoted_string);
-//            BOOST_SPIRIT_DEBUG_NODE(double_quoted_string);
+//            BOOST_SPIRIT_DEBUG_NODE(quotedString);
+//            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
 //            BOOST_SPIRIT_DEBUG_NODE(argument);
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
         qi::rule<Iterator, char()> escape;
         qi::rule<Iterator, std::string(), ascii::space_type> word;
-        qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-        qi::rule<Iterator, std::string(), ascii::space_type> double_quoted_string;
+        qi::rule<Iterator, std::string(), ascii::space_type> quotedString;
+        qi::rule<Iterator, std::string(), ascii::space_type> doubleQuotedString;
         qi::rule<Iterator, std::string(), ascii::space_type> argument;
         qi::rule<Iterator, std::vector<std::string>(), ascii::space_type> start;
     };
