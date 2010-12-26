@@ -205,6 +205,8 @@ namespace cli { namespace parser
             redirection %= redirectors >> word;
             ending %= terminators;
 
+            // NOTE: This doesn't work as expected
+            // lastCommand %= assignment || +word || +redirection;
             lastCommand =
                 assignment      [at_c<0>(_val) = _1] ||
                 (+word)         [at_c<1>(_val) = _1] ||
@@ -216,16 +218,16 @@ namespace cli { namespace parser
                 +command    [push_back(_val, _1)] ||
                 lastCommand [push_back(_val, _1)];
 
-            BOOST_SPIRIT_DEBUG_NODE(name);
-            BOOST_SPIRIT_DEBUG_NODE(variable);
-            BOOST_SPIRIT_DEBUG_NODE(quotedString);
-            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
-            BOOST_SPIRIT_DEBUG_NODE(word);
-            BOOST_SPIRIT_DEBUG_NODE(assignment);
-            BOOST_SPIRIT_DEBUG_NODE(redirection);
-            BOOST_SPIRIT_DEBUG_NODE(ending);
-            BOOST_SPIRIT_DEBUG_NODE(command);
-            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
+//            BOOST_SPIRIT_DEBUG_NODE(name);
+//            BOOST_SPIRIT_DEBUG_NODE(variable);
+//            BOOST_SPIRIT_DEBUG_NODE(quotedString);
+//            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
+//            BOOST_SPIRIT_DEBUG_NODE(word);
+//            BOOST_SPIRIT_DEBUG_NODE(assignment);
+//            BOOST_SPIRIT_DEBUG_NODE(redirection);
+//            BOOST_SPIRIT_DEBUG_NODE(ending);
+//            BOOST_SPIRIT_DEBUG_NODE(command);
+//            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
