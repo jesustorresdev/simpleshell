@@ -46,23 +46,23 @@ namespace cli
     class CommandLineInterpreter
     {
         public:
-            typedef CommandLineInterpreter<Parser, Command> ClassType;
+            typedef CommandLineInterpreter<Parser, Command> Type;
 
             typedef Parser<std::string::iterator> ParserType;
             typedef Command CommandType;
 
             // Callback functions types
-            typedef typename callbacks::DoCommandCallback<ClassType>::Type
+            typedef typename callbacks::DoCommandCallback<Type>::Type
                 DoCommandCallback;
-            typedef typename callbacks::EmptyLineCallback<ClassType>::Type
+            typedef typename callbacks::EmptyLineCallback<Type>::Type
                 EmptyLineCallback;
-            typedef typename callbacks::PreDoCommandCallback<ClassType>::Type
+            typedef typename callbacks::PreDoCommandCallback<Type>::Type
                 PreDoCommandCallback;
-            typedef typename callbacks::PostDoCommandCallback<ClassType>::Type
+            typedef typename callbacks::PostDoCommandCallback<Type>::Type
                 PostDoCommandCallback;
-            typedef typename callbacks::PreLoopCallback<ClassType>::Type
+            typedef typename callbacks::PreLoopCallback<Type>::Type
                 PreLoopCallback;
-            typedef typename callbacks::PostLoopCallback<ClassType>::Type
+            typedef typename callbacks::PostLoopCallback<Type>::Type
                 PostLoopCallback;
 
             // Constructor
@@ -183,8 +183,9 @@ namespace cli
         Command command;
         std::string::iterator begin = line.begin();
         std::string::iterator end = line.end();
+        typename ParserType::skipper_type skipperParser;
         bool success = qi::phrase_parse(begin, end, *lineParser_,
-            ascii::space, command);
+            skipperParser, command);
         if (success && begin == end) {
             bool isFinished = doCommand(command);
             return postDoCommand(isFinished, line);

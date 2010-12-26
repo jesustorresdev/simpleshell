@@ -179,7 +179,7 @@ namespace cli { namespace parser
                 eps[_a = false] >>
                 dereference >>
                 -lit('{')[_a = true] >>
-                name[bind(&ClassType::variableLookup, *this, _val, _1)] >>
+                name[bind(&Type::variableLookup, *this, _val, _1)] >>
                 ((eps(_a) >> '}') | eps(!_a));
 
             quotedString %= '\'' >> *(char_ - '\'') >> '\'';
@@ -272,8 +272,8 @@ namespace cli { namespace parser
         qi::rule<Iterator, Command(), ascii::space_type> lastCommand;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
 
-        typedef SimpleShellParser<Iterator> ClassType;
-        typedef typename callbacks::VariableLookupCallback<ClassType>::Type
+        typedef SimpleShellParser<Iterator> Type;
+        typedef typename callbacks::VariableLookupCallback<Type>::Type
             VariableLookupCallback;
 
         protected:
