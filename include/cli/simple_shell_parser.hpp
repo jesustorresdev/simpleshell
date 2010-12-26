@@ -29,6 +29,8 @@
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/include/phoenix_fusion.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/callbacks.hpp>
@@ -45,6 +47,12 @@ namespace cli { namespace parser
     struct Command
     {
         Command() : terminator(NORMAL){}
+
+        struct VariableAssignment
+        {
+            std::string name;
+            std::string value;
+        };
 
         struct StdioRedirection
         {
@@ -66,6 +74,7 @@ namespace cli { namespace parser
             PIPED                   // command1 | command2
         };
 
+        VariableAssignment variable;
         std::vector<std::string> arguments;
         std::vector<StdioRedirection> redirections;
         TypeOfTerminator terminator;
@@ -80,7 +89,8 @@ namespace cli { namespace parser
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& out, const Command& command)
     {
-        return out << "{arguments: "    << command.arguments
+        return out << "{variable: "     << command.variable
+                  << ", arguments: "    << command.arguments
                   << ", redirections: " << command.redirections
                   << ", terminator: "   << command.terminator << '}';
     }
@@ -93,12 +103,27 @@ namespace cli { namespace parser
         return out << "{type: "     << redirection.type
                   << ", argument: " << redirection.argument << '}';
     }
+
+    template <typename CharT, typename Traits>
+    std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& out,
+        const Command::VariableAssignment& variable)
+    {
+        return out << "{name: "  << variable.name
+                  << ", value: " << variable.value << '}';
+    }
 }}
 
 //
 // Adaptors from Command classes to Boost.Fusion sequences. They are required
 // by the parser SimpleShellParser. Must be defined at global scope.
 //
+
+BOOST_FUSION_ADAPT_STRUCT(
+    cli::parser::Command::VariableAssignment,
+    (std::string, name)
+    (std::string, value)
+)
 
 BOOST_FUSION_ADAPT_STRUCT(
     cli::parser::Command::StdioRedirection,
@@ -108,6 +133,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 
 BOOST_FUSION_ADAPT_STRUCT(
     cli::parser::Command,
+    (cli::parser::Command::VariableAssignment, variable)
     (std::vector<std::string>, arguments)
     (std::vector<cli::parser::Command::StdioRedirection>, redirections)
     (cli::parser::Command::TypeOfTerminator, terminator)
@@ -130,27 +156,34 @@ namespace cli { namespace parser
         SimpleShellParser() : SimpleShellParser::base_type(start)
         {
             using qi::_1;
+            using qi::_a;
             using qi::_val;
+            using qi::eps;
             using qi::lexeme;
+            using qi::lit;
             using ascii::char_;
             using ascii::space;
+            using phoenix::at_c;
             using phoenix::begin;
             using phoenix::bind;
             using phoenix::end;
             using phoenix::insert;
             using phoenix::push_back;
 
+            dereference = '$';
+            special %= dereference | redirectors | terminators;
             escape %= '\\' >> char_;
-            name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
-            variableA %= '$' >>
-                name [bind(&ClassType::variableLookup, *this, _val, _1)];
-            variableB %= "${" >>
-                name [bind(&ClassType::variableLookup, *this, _val, _1)] >>
-                '}';
-            variable %= variableA | variableB;
 
-            quotedString %= lexeme['\'' >> *(char_ - '\'') >> '\''];
-            doubleQuotedString = lexeme['"' >> *(
+            name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
+            variable =
+                eps[_a = false] >>
+                dereference >>
+                -lit('{')[_a = true] >>
+                name[bind(&ClassType::variableLookup, *this, _val, _1)] >>
+                ((eps(_a) >> '}') | eps(!_a));
+
+            quotedString %= '\'' >> *(char_ - '\'') >> '\'';
+            doubleQuotedString = '"' >> *(
                 variable    [insert(_val, end(_val), begin(_1), end(_1))] |
                 (
                     char_('\'')             [push_back(_val, _1)] >>
@@ -158,30 +191,41 @@ namespace cli { namespace parser
                     char_('\'')             [push_back(_val, _1)]
                 ) |
                 (char_ - '"')               [push_back(_val, _1)]
-            ) >> '"'];
-            word = lexeme[+(
+            ) >> '"';
+
+            word = +(
                 variable            [insert(_val, end(_val), begin(_1), end(_1))] |
                 quotedString        [insert(_val, end(_val), begin(_1), end(_1))] |
                 doubleQuotedString  [insert(_val, end(_val), begin(_1), end(_1))] |
-                escape              [push_back(_val, _1)] |
-                (char_ - space)     [push_back(_val, _1)]
-            )];
+                escape                      [push_back(_val, _1)] |
+                (char_ - space - special)   [push_back(_val, _1)]
+            );
 
+            assignment %= name >> '=' >> -word;
             redirection %= redirectors >> word;
             ending %= terminators;
-            command %= +(word - redirection) >> *redirection >> ending;
-            lastCommand %= +(word - redirection) >> *redirection;
-            start = +command    [push_back(_val, _1)] ||
-                    lastCommand [push_back(_val, _1)];
 
-//            BOOST_SPIRIT_DEBUG_NODE(variable);
-//            BOOST_SPIRIT_DEBUG_NODE(quotedString);
-//            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
-//            BOOST_SPIRIT_DEBUG_NODE(word);
-//            BOOST_SPIRIT_DEBUG_NODE(redirection);
-//            BOOST_SPIRIT_DEBUG_NODE(end);
-//            BOOST_SPIRIT_DEBUG_NODE(command);
-//            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
+            lastCommand =
+                assignment      [at_c<0>(_val) = _1] ||
+                (+word)         [at_c<1>(_val) = _1] ||
+                (+redirection)  [at_c<2>(_val) = _1];
+            command =
+                lastCommand     [_val = _1] >>
+                ending          [at_c<3>(_val) = _1];
+            start =
+                +command    [push_back(_val, _1)] ||
+                lastCommand [push_back(_val, _1)];
+
+            BOOST_SPIRIT_DEBUG_NODE(name);
+            BOOST_SPIRIT_DEBUG_NODE(variable);
+            BOOST_SPIRIT_DEBUG_NODE(quotedString);
+            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
+            BOOST_SPIRIT_DEBUG_NODE(word);
+            BOOST_SPIRIT_DEBUG_NODE(assignment);
+            BOOST_SPIRIT_DEBUG_NODE(redirection);
+            BOOST_SPIRIT_DEBUG_NODE(ending);
+            BOOST_SPIRIT_DEBUG_NODE(command);
+            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
@@ -211,15 +255,15 @@ namespace cli { namespace parser
             }
         } terminators;
 
+        qi::rule<Iterator, char()> dereference;
+        qi::rule<Iterator, char()> special;
         qi::rule<Iterator, char()> escape;
         qi::rule<Iterator, std::string()> name;
-        qi::rule<Iterator, std::string()> variableA;
-        qi::rule<Iterator, std::string()> variableB;
-        qi::rule<Iterator, std::string()> variable;
+        qi::rule<Iterator, std::string(), qi::locals<bool> > variable;
         qi::rule<Iterator, std::string()> quotedString;
         qi::rule<Iterator, std::string()> doubleQuotedString;
-        qi::rule<Iterator, std::string(), ascii::space_type> word;
-        qi::rule<Iterator, std::string(), ascii::space_type> argument;
+        qi::rule<Iterator, std::string()> word;
+        qi::rule<Iterator, Command::VariableAssignment()> assignment;
         qi::rule<Iterator, Command::StdioRedirection(), ascii::space_type> redirection;
         qi::rule<Iterator, Command::TypeOfTerminator(), ascii::space_type> ending;
         qi::rule<Iterator, Command(), ascii::space_type> command;

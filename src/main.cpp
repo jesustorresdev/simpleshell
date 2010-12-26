@@ -35,10 +35,15 @@ typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
 bool doCommandCallback(InterpreterType* interpreter,
     const InterpreterType::CommandType& commands)
 {
-    if (commands.size() != 0) {
+    if (! commands.empty()) {
         interpreter->getOutStream() << commands << std::endl;
-        if (commands[0].arguments[0] == "exit") {
-            return true;
+        InterpreterType::CommandType::const_iterator iter;
+        for (iter = commands.begin(); iter < commands.end(); ++iter) {
+            if (! iter->arguments.empty()) {
+                if (iter->arguments[0] == "exit") {
+                    return true;
+                }
+            }
         }
     }
     return false;
