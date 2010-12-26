@@ -47,9 +47,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct DoCommandCallback
     {
-        typedef bool (Type)(Interpreter*,
-            const typename Interpreter::CommandType&);
-
+        typedef bool (Type)(const typename Interpreter::CommandType&);
         static const char* name() { return "DoCommandCallback"; }
     };
 
@@ -68,8 +66,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct EmptyLineCallback
     {
-        typedef bool (Type)(Interpreter*);
-
+        typedef bool (Type)();
         static const char* name() { return "EmptyLineCallback"; }
     };
 
@@ -88,8 +85,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct PreDoCommandCallback
     {
-        typedef void (Type)(Interpreter*, std::string&);
-
+        typedef void (Type)(std::string&);
         static const char* name() { return "PreDoCommandCallback"; }
     };
 
@@ -108,8 +104,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct PostDoCommandCallback
     {
-        typedef bool (Type)(Interpreter*, bool, const std::string&);
-
+        typedef bool (Type)(bool, const std::string&);
         static const char* name() { return "PostDoCommandCallback"; }
     };
 
@@ -128,8 +123,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct PreLoopCallback
     {
-        typedef void (Type)(Interpreter*);
-
+        typedef void (Type)();
         static const char* name() { return "PreLoopCallback"; }
     };
 
@@ -148,8 +142,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct PostLoopCallback
     {
-        typedef void (Type)(Interpreter*);
-
+        typedef void (Type)();
         static const char* name() { return "PostLoopCallback"; }
     };
 
@@ -165,11 +158,10 @@ namespace cli { namespace callbacks
     // VariableLookupCallback
     //
 
-    template <typename Parser>
+    template <typename Interpreter>
     struct VariableLookupCallback
     {
         typedef void (Type)(std::string&, const std::string&);
-
         static const char* name() { return "VariableLookupCallback"; }
     };
 

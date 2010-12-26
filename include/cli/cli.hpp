@@ -95,17 +95,17 @@ namespace cli
             void setCallback(Functor function);
 
         protected:
-            virtual bool defaultDoCommand(const Command& command);
-            virtual bool defaultEmptyLine();
+            virtual bool doCommand(const Command& command);
+            virtual bool emptyLine();
 
             // Hook methods invoked inside interpretOneLine()
-            virtual void defaultPreDoCommand(std::string& line) {};
-            virtual bool defaultPostDoCommand(bool isFinished,
+            virtual void preDoCommand(std::string& line) {};
+            virtual bool postDoCommand(bool isFinished,
                 const std::string& line);
 
             // Hook methods invoked once inside loop()
-            virtual void defaultPreLoop() {};
-            virtual void defaultPostLoop() {};
+            virtual void preLoop();
+            virtual void postLoop();
 
         private:
             std::istream& in_;
@@ -140,19 +140,13 @@ namespace cli
         : in_(in),
           out_(out),
           readLine_(historyFileName, in, out),
-          lineParser_(new ParserType),
-          doCommandCallback_(&ClassType::defaultDoCommand),
-          emptyLineCallback_(&ClassType::defaultEmptyLine),
-          preDoCommandCallback_(&ClassType::defaultPreDoCommand),
-          postDoCommandCallback_(&ClassType::defaultPostDoCommand),
-          preLoopCallback_(&ClassType::defaultPreLoop),
-          postLoopCallback_(&ClassType::defaultPostLoop)
+          lineParser_(new ParserType)
     {}
 
     template <template <typename> class Parser, typename Command>
     void CommandLineInterpreter<Parser, Command>::loop()
     {
-        preLoopCallback_(this);
+        preLoop();
 
         if (internals::isStreamTty(out_)) {
             if (! introText_.empty()) {
@@ -170,17 +164,17 @@ namespace cli
                 break;
         }
 
-        postLoopCallback_(this);
+        postLoop();
     }
 
     template <template <typename> class Parser, typename Command>
     bool CommandLineInterpreter<Parser, Command>::interpretOneLine(
         std::string line)
     {
-        preDoCommandCallback_(this, line);
+        preDoCommand(line);
 
         if (internals::isLineEmpty(line)) {
-            return emptyLineCallback_(this);
+            return emptyLine();
         }
         else {
             lastCommand_ = line;
@@ -192,8 +186,8 @@ namespace cli
         bool success = qi::phrase_parse(begin, end, *lineParser_,
             ascii::space, command);
         if (success && begin == end) {
-            bool isFinished = doCommandCallback_(this, command);
-            return postDoCommandCallback_(this, isFinished, line);
+            bool isFinished = doCommand(command);
+            return postDoCommand(isFinished, line);
         }
         else {
             std::string no_parsed(begin, end);
@@ -204,26 +198,47 @@ namespace cli
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultDoCommand(
-            const Command& command)
+    bool CommandLineInterpreter<Parser, Command>::doCommand(
+        const Command& command)
     {
-        return false;
+        return doCommandCallback_.empty() ?
+            false : doCommandCallback_(command);
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultEmptyLine()
+    bool CommandLineInterpreter<Parser, Command>::emptyLine()
     {
-        if (! lastCommand_.empty()) {
+        if (! emptyLineCallback_.empty()) {
+            return emptyLineCallback_();
+        }
+        else if (! lastCommand_.empty()) {
             return interpretOneLine(lastCommand_);
         }
         return false;
     }
 
     template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::defaultPostDoCommand(
+    bool CommandLineInterpreter<Parser, Command>::postDoCommand(
         bool isFinished, const std::string& line)
     {
-        return isFinished;
+        return postDoCommandCallback_.empty() ?
+            isFinished : postDoCommandCallback_(isFinished, line);
+    }
+
+    template <template <typename> class Parser, typename Command>
+    void CommandLineInterpreter<Parser, Command>::preLoop()
+    {
+        if (! preLoopCallback_.empty()) {
+            preLoopCallback_();
+        }
+    }
+
+    template <template <typename> class Parser, typename Command>
+    void CommandLineInterpreter<Parser, Command>::postLoop()
+    {
+        if (! postLoopCallback_.empty()) {
+            postLoopCallback_();
+        }
     }
 
     template <template <typename> class Parser, typename Command>

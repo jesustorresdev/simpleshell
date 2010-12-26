@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+#include <ostream>
 #include <vector>
 
 #include <cli/auxiliary.hpp>
@@ -32,11 +33,10 @@ const char PROMPT_TEXT[] = "$ ";
 typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
     std::vector<cli::parser::Command> > InterpreterType;
 
-bool doCommandCallback(InterpreterType* interpreter,
-    const InterpreterType::CommandType& commands)
+bool doCommandCallback(const InterpreterType::CommandType& commands)
 {
     if (! commands.empty()) {
-        interpreter->getOutStream() << commands << std::endl;
+        std::cout << commands << std::endl;
         InterpreterType::CommandType::const_iterator iter;
         for (iter = commands.begin(); iter < commands.end(); ++iter) {
             if (! iter->arguments.empty()) {
