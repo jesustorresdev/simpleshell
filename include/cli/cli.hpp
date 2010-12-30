@@ -51,7 +51,10 @@ namespace cli
             typedef Parser<std::string::iterator> ParserType;
             typedef Command CommandType;
 
+            //
             // Callback functions types
+            //
+
             typedef typename callbacks::DoCommandCallback<Type>::Type
                 DoCommandCallback;
             typedef typename callbacks::EmptyLineCallback<Type>::Type
@@ -65,17 +68,26 @@ namespace cli
             typedef typename callbacks::PostLoopCallback<Type>::Type
                 PostLoopCallback;
 
-            // Constructor
+            //
+            // Class constructors
+            //
+
             CommandLineInterpreter(
                 const std::string &historyFileName = std::string(),
                 std::istream& in = std::cin,
                 std::ostream& out = std::cout);
 
+            //
             // Methods to interpret command-line input
+            //
+
             void loop();
             bool interpretOneLine(std::string line);
 
-            // Getters
+            //
+            // Class attribute getters
+            //
+
             std::istream& getInStream() const
                 { return in_; }
             std::ostream& getOutStream() const
@@ -84,26 +96,44 @@ namespace cli
             std::string getLastCommand() const
                 { return lastCommand_; }
 
-            // Setters
+            //
+            // Class attribute setters
+            //
+
             void setIntroText(const std::string& intro)
                 { introText_ = intro; }
 
             void setPromptText(const std::string& prompt)
                 { promptText_ = prompt; }
 
+            //
+            // Callback functions setter
+            //
+
             template <template <typename> class Callback, typename Functor>
             void setCallback(Functor function);
 
         protected:
+
+            //
+            // Hook methods invoked for command execution
+            //
+
             virtual bool doCommand(const Command& command);
             virtual bool emptyLine();
 
+            //
             // Hook methods invoked inside interpretOneLine()
+            //
+
             virtual void preDoCommand(std::string& line) {};
             virtual bool postDoCommand(bool isFinished,
                 const std::string& line);
 
+            //
             // Hook methods invoked once inside loop()
+            //
+
             virtual void preLoop();
             virtual void postLoop();
 
@@ -118,7 +148,10 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
+            //
             // Callback functions objects
+            //
+
             boost::function<DoCommandCallback> doCommandCallback_;
             boost::function<EmptyLineCallback> emptyLineCallback_;
             boost::function<PreDoCommandCallback> preDoCommandCallback_;

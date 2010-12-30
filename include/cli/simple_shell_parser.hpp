@@ -231,6 +231,10 @@ namespace cli { namespace parser
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
+        //
+        // Parser rules
+        //
+
         struct Redirections
             : qi::symbols<char, Command::StdioRedirection::TypeOfRedirection>
         {
@@ -271,6 +275,10 @@ namespace cli { namespace parser
         qi::rule<Iterator, Command(), ascii::space_type> command;
         qi::rule<Iterator, Command(), ascii::space_type> lastCommand;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
+
+        //
+        // Callback functions
+        //
 
         typedef SimpleShellParser<Iterator> Type;
         typedef typename callbacks::VariableLookupCallback<Type>::Type
