@@ -63,6 +63,11 @@ namespace cli { namespace readline
                 return;
             }
 
+            clear_history_ = getFunction<void ()>("clear_history");
+            if (getLastError() != system::errc::success) {
+                return;
+            }
+
             rl_instream_ = getVariable<FILE*>("rl_instream");
             if (getLastError() != system::errc::success) {
                 return;
@@ -141,32 +146,39 @@ namespace cli { namespace readline
     // Class Readline
     //
 
-    Readline::Readline(const std::string &historyFileName, std::istream& in,
-        std::ostream& out)
-        : readlineLibrary_(new ReadlineLibrary()),
-          historyFileName_(historyFileName), in_(in), out_(out)
+    Readline::Readline(bool useLibrary)
+        : readlineLibrary_(useLibrary ? new ReadlineLibrary() : NULL),
+          in_(std::cin), out_(std::cout)
     {
-        if (readlineLibrary_->getLastError() != system::errc::success) {
+        init();
+    }
+
+    Readline::Readline(std::istream& in, std::ostream& out, bool useLibrary)
+        : readlineLibrary_(useLibrary ? new ReadlineLibrary() : NULL),
+          in_(in), out_(out)
+    {
+        init();
+    }
+
+    void Readline::init()
+    {
+        if (readlineLibrary_ &&
+            (readlineLibrary_->getLastError() != system::errc::success)) {
             readlineLibrary_.reset();
         }
 
-        // Set the input and output streams for readline
-        if (readlineLibrary_ && internals::isStreamTty(in)) {
-            readlineLibrary_->setInStream(in);
+        // Set the input and output streams for readline library
+        if (readlineLibrary_ && internals::isStreamTty(in_)) {
+            readlineLibrary_->setInStream(in_);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
             }
         }
-        if (readlineLibrary_ && internals::isStreamTty(out)) {
-            readlineLibrary_->setOutStream(out);
+        if (readlineLibrary_ && internals::isStreamTty(out_)) {
+            readlineLibrary_->setOutStream(out_);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
             }
-        }
-
-        // Load the readline history file
-        if (readlineLibrary_ && (! historyFileName.empty())) {
-            readlineLibrary_->readHistory(historyFileName);
         }
     }
 
@@ -192,6 +204,28 @@ namespace cli { namespace readline
             }
             std::getline(in_, line);
             return in_.good();
+        }
+    }
+
+    //
+    // Methods for input history management
+    //
+
+    void Readline::setHistoryFile(const std::string &fileName,
+        bool loadInHistory)
+    {
+        if (readlineLibrary_) {
+            historyFileName_ = fileName;
+            if (loadInHistory) {
+                readlineLibrary_->readHistory(fileName);
+            }
+        }
+    }
+
+    void Readline::clearHistory()
+    {
+        if (readlineLibrary_) {
+            readlineLibrary_->clearHistory();
         }
     }
 }}

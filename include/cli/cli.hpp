@@ -72,10 +72,9 @@ namespace cli
             // Class constructors
             //
 
-            CommandLineInterpreter(
-                const std::string &historyFileName = std::string(),
-                std::istream& in = std::cin,
-                std::ostream& out = std::cout);
+            CommandLineInterpreter(bool useReadline = true);
+            CommandLineInterpreter(std::istream& in, std::ostream& out,
+                bool useReadline = true);
 
             //
             // Methods to interpret command-line input
@@ -105,6 +104,8 @@ namespace cli
 
             void setPromptText(const std::string& prompt)
                 { promptText_ = prompt; }
+
+            void setHistoryFile(const std::string& fileName);
 
             //
             // Callback functions setter
@@ -167,12 +168,19 @@ namespace cli
 
     template <template <typename> class Parser, typename Command>
     CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
-        const std::string &historyFileName,
-        std::istream& in,
-        std::ostream& out)
+        bool useReadline)
+        : in_(std::cin),
+          out_(std::cout),
+          readLine_(std::cin, std::cout, useReadline),
+          lineParser_(new ParserType)
+    {}
+
+    template <template <typename> class Parser, typename Command>
+    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+        std::istream& in, std::ostream& out, bool useReadline)
         : in_(in),
           out_(out),
-          readLine_(historyFileName, in, out),
+          readLine_(in, out, useReadline),
           lineParser_(new ParserType)
     {}
 
@@ -280,6 +288,14 @@ namespace cli
     void CommandLineInterpreter<Parser, Command>::setCallback(Functor function)
     {
         callbacks::SetCallbackImpl<Callback>::setCallback(*this, function);
+    }
+
+    template <template <typename> class Parser, typename Command>
+    void CommandLineInterpreter<Parser, Command>::setHistoryFile(
+        const std::string& fileName)
+    {
+        readLine_.clearHistory();
+        readLine_.setHistoryFile(fileName);
     }
 }
 

@@ -58,6 +58,9 @@ namespace cli { namespace readline
             void readHistory(const std::string& fileName);
             void writeHistory(const std::string& fileName);
 
+            void clearHistory() const
+                { clear_history_(); }
+
             //
             // Readline library variable setters
             //
@@ -70,6 +73,7 @@ namespace cli { namespace readline
             boost::function<void (const char*)> add_history_;
             boost::function<int (const char*)> read_history_;
             boost::function<int (const char*)> write_history_;
+            boost::function<void ()> clear_history_;
 
             FILE** rl_instream_;
             FILE** rl_outstream_;
@@ -82,19 +86,35 @@ namespace cli { namespace readline
     class Readline
     {
         public:
-            Readline(const std::string &historyFileName = std::string(),
-                std::istream& in = std::cin, std::ostream& out = std::cout);
+
+            Readline(bool useLibrary = true);
+            Readline(std::istream& in, std::ostream& out,
+                bool useLibrary = true);
+
             ~Readline();
 
             bool readLine(std::string& line,
                 const std::string& prompt = std::string()) const;
 
+            bool isUsingLibrary()
+                { return readlineLibrary_; }
+
+            //
+            // Methods for input history management
+            //
+
+            void setHistoryFile(const std::string &fileName,
+                bool loadInHistory = true);
+            void clearHistory();
+
         private:
             boost::scoped_ptr<ReadlineLibrary> readlineLibrary_;
-
-            std::string historyFileName_;
             std::istream& in_;
             std::ostream& out_;
+
+            std::string historyFileName_;
+
+            void init();
     };
 }}
 
