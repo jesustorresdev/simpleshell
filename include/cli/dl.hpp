@@ -19,7 +19,6 @@
 #ifndef DL_HPP_
 #define DL_HPP_
 
-#include <dlfcn.h>
 #include <string>
 
 #include <boost/function.hpp>
@@ -28,6 +27,10 @@
 
 namespace dl
 {
+    namespace posix {
+        #include <dlfcn.h>
+    }
+
     using namespace boost;
 
     //
@@ -62,6 +65,7 @@ namespace dl
     class DynamicLibrary
     {
         public:
+
             enum OpenFlags
             {
                 LAZY_BINDING        = RTLD_LAZY,
@@ -125,13 +129,13 @@ namespace dl
             //
 
             static void* dlopen(const std::string& fileName, OpenFlags flags)
-                { return ::dlopen(fileName.c_str(), flags); }
+                { return posix::dlopen(fileName.c_str(), flags); }
 
             static int dlclose(void* handle)
-                { return ::dlclose(handle); }
+                { return posix::dlclose(handle); }
 
             static void* dlsym(void* handle, const std::string &symbol)
-                { return ::dlsym(handle, symbol.c_str()); }
+                { return posix::dlsym(handle, symbol.c_str()); }
 
             static std::string dlerror();
 
@@ -153,6 +157,52 @@ namespace dl
             template<typename Type>
             Type* getVariable(void* handle, const std::string& symbol);
     };
+
+    inline std::string DynamicLibrary::dlerror()
+    {
+        const char *message = posix::dlerror();
+        return (message == NULL) ? std::string() : std::string(message);
+    }
+
+    template<typename Signature>
+    boost::function<Signature> DynamicLibrary::getFunction(void* handle,
+        const std::string& symbol)
+    {
+        boost::function<Signature> function;
+
+        DynamicLibrary::dlerror();
+        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
+        std::string errorMessage = DynamicLibrary::dlerror();
+        if ((address == NULL) && errorMessage.empty()) {
+            lastErrorMessage_ = errorMessage;
+            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+        }
+        else {
+            using namespace boost;
+            typedef typename add_pointer<Signature>::type function_pointer;
+            function = reinterpret_cast<function_pointer>(address);
+            errorCode_.clear();
+        }
+
+        return function;
+    }
+
+    template<typename Type>
+    Type* DynamicLibrary::getVariable(void* handle, const std::string &symbol)
+    {
+        DynamicLibrary::dlerror();
+        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
+        std::string errorMessage = DynamicLibrary::dlerror();
+        if ((address == NULL) && errorMessage.empty()) {
+            lastErrorMessage_ = errorMessage;
+            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+        }
+        else {
+            errorCode_.clear();
+        }
+
+        return reinterpret_cast<Type*>(address);
+    }
 
     //
     // Boolean operators overload for DynamicLibrary::OpenFlags
@@ -201,57 +251,6 @@ namespace dl
     operator~(DynamicLibrary::OpenFlags a)
     {
         return DynamicLibrary::OpenFlags(~static_cast<int>(a));
-    }
-
-    //
-    // Class DynamicLibrary
-    //
-
-    inline
-    std::string DynamicLibrary::dlerror()
-    {
-        const char *message = ::dlerror();
-        return (message == NULL) ? std::string() : std::string(message);
-    }
-
-    template<typename Signature>
-    boost::function<Signature> DynamicLibrary::getFunction(void* handle,
-        const std::string& symbol)
-    {
-        boost::function<Signature> function;
-
-        DynamicLibrary::dlerror();
-        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-        std::string errorMessage = DynamicLibrary::dlerror();
-        if ((address == NULL) && errorMessage.empty()) {
-            lastErrorMessage_ = errorMessage;
-            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
-        }
-        else {
-            using namespace boost;
-            typedef typename add_pointer<Signature>::type function_pointer;
-            function = reinterpret_cast<function_pointer>(address);
-            errorCode_.clear();
-        }
-
-        return function;
-    }
-
-    template<typename Type>
-    Type* DynamicLibrary::getVariable(void* handle, const std::string &symbol)
-    {
-        DynamicLibrary::dlerror();
-        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-        std::string errorMessage = DynamicLibrary::dlerror();
-        if ((address == NULL) && errorMessage.empty()) {
-            lastErrorMessage_ = errorMessage;
-            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
-        }
-        else {
-            errorCode_.clear();
-        }
-
-        return reinterpret_cast<Type*>(address);
     }
 }
 

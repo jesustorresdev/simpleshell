@@ -24,6 +24,10 @@
 
 namespace dl
 {
+    namespace posix {
+        #include <dlfcn.h>
+    }
+
     using namespace boost;
 
     //
