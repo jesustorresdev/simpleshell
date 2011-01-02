@@ -93,7 +93,7 @@ namespace glob
         private:
              std::vector<std::string> pathNames_;
 
-             friend int onGlobError(const char *epath, int eerrno);
+             friend int onGlobError(const char* epath, int eerrno);
     };
 
     inline Glob::operator const std::vector<std::string>&() const

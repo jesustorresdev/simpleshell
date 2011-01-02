@@ -16,8 +16,8 @@
 # limitations under the License.
 #
 
-SET (CLI_SOURCE ${CLI_SOURCE} auxiliary.cpp dl.cpp fileno.cpp internals.cpp
-                              readline.cpp)
+SET (CLI_SOURCE ${CLI_SOURCE} auxiliary.cpp dl.cpp fileno.cpp glob.cpp
+                              internals.cpp readline.cpp)
 
 # Build static library
 ADD_LIBRARY(cli STATIC ${CLI_SOURCE})
