@@ -64,7 +64,7 @@ namespace glob
             Glob(const std::string& pattern, GlobFlags flags = NONE);
 
             //
-            // Overloaded operators to assign the list of path names found
+            // Overloaded cast operators to get the list of path names found
             //
 
             operator const std::vector<std::string>&() const;
