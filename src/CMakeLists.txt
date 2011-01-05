@@ -19,9 +19,6 @@
 # Build the library
 ADD_SUBDIRECTORY(cli)
 
-# Build the boost::system library
-ADD_SUBDIRECTORY(system)
-
 # Build the demo program
 ADD_EXECUTABLE(simpleshell main.cpp)
 TARGET_LINK_LIBRARIES(simpleshell cli ${CLI_LINK_LIBS})

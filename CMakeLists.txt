@@ -27,16 +27,18 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules")
 SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
 SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/lib")
 
-SET (CLI_LINK_LIBS ${CLI_LINK_LIBS} boost_system dl)
+SET (CLI_LINK_LIBS ${CLI_LINK_LIBS} dl)
 
-# Find Boost. It is a requirement for the library
-## TODO: The library requires all the includes but only links against
-## boost_system 
-#FIND_PACKAGE(Boost REQUIRED)
-#IF (Boost_FOUND)
-#    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
-#    SET (DEMO_LIBS ${DEMO_LIBS} ${Boost_LIBRARY})
-#ENDIF (Boost_FOUND)
+# Find Boost. It is a requirement for the framework
+SET(Boost_USE_STATIC_LIBS OFF)
+SET(Boost_USE_MULTITHREADED ON)
+SET(Boost_ADDITIONAL_VERSIONS "1.41" "1.41.0" "1.42" "1.42.0" "1.43" "1.43.0"
+                              "1.44" "1.44.0" "1.45" "1.45.0")
+FIND_PACKAGE(Boost 1.44.0 REQUIRED COMPONENTS system)
+IF (Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+    SET (CLI_LINK_LIBS ${CLI_LINK_LIBS} ${Boost_LIBRARIES})
+ENDIF (Boost_FOUND)
 
 # Compiler options
 ADD_DEFINITIONS(-O0 -g -Wall -fmessage-length=0)
