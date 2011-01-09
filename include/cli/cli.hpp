@@ -22,9 +22,6 @@
 #include <iostream>
 #include <string>
 
-#include <libintl.h>    // TODO: To use Boost.Locale when available
-#define translate(str) ::gettext(str)
-
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -227,16 +224,12 @@ namespace cli
         typename ParserType::skipper_type skipperParser;
         bool success = qi::phrase_parse(begin, end, *lineParser_,
             skipperParser, command);
-        if (success && begin == end) {
+        if (success) {
             bool isFinished = doCommand(command);
             return postDoCommand(isFinished, line);
         }
-        else {
-            std::string no_parsed(begin, end);
-            out_ << no_parsed
-                 << ": " << translate("syntax error") << std::endl;
-            return false;
-        }
+
+        return false;
     }
 
     template <template <typename> class Parser, typename Command>

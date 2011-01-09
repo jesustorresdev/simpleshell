@@ -22,12 +22,16 @@
 #include <string>
 #include <vector>
 
+#include <libintl.h>    // TODO: To use Boost.Locale when available
+#define translate(str) ::gettext(str)
+
 //#define BOOST_SPIRIT_DEBUG
 
 #include <boost/function.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
+#include <boost/spirit/home/phoenix/object/construct.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -156,33 +160,39 @@ namespace cli { namespace parser
         SimpleShellParser() : SimpleShellParser::base_type(start)
         {
             using qi::_1;
+            using qi::_2;
+            using qi::_3;
             using qi::_a;
             using qi::_val;
             using qi::eps;
+            using qi::eoi;
+            using qi::fail;
             using qi::lexeme;
             using qi::lit;
+            using qi::on_error;
             using ascii::char_;
             using ascii::space;
             using phoenix::at_c;
             using phoenix::begin;
             using phoenix::bind;
+            using phoenix::construct;
             using phoenix::end;
             using phoenix::insert;
             using phoenix::push_back;
 
             dereference = '$';
             special %= dereference | redirectors | terminators;
-            escape %= '\\' >> char_;
+            escape %= '\\' > char_;
 
             name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
             variable =
                 eps[_a = false] >>
                 dereference >>
-                -lit('{')[_a = true] >>
+                -lit('{')[_a = true] >
                 name[bind(&Type::variableLookup, *this, _val, _1)] >>
-                ((eps(_a) >> '}') | eps(!_a));
+                ((eps(_a) > '}') | eps(!_a));
 
-            quotedString %= '\'' >> *(char_ - '\'') >> '\'';
+            quotedString %= '\'' >> *(char_ - '\'') > '\'';
             doubleQuotedString = '"' >> *(
                 variable    [insert(_val, end(_val), begin(_1), end(_1))] |
                 (
@@ -191,7 +201,7 @@ namespace cli { namespace parser
                     char_('\'')             [push_back(_val, _1)]
                 ) |
                 (char_ - '"')               [push_back(_val, _1)]
-            ) >> '"';
+            ) > '"';
 
             word = +(
                 variable            [insert(_val, end(_val), begin(_1), end(_1))] |
@@ -202,10 +212,10 @@ namespace cli { namespace parser
             );
 
             assignment %= name >> '=' >> -word;
-            redirection %= redirectors >> word;
+            redirection %= redirectors > word;
             ending %= terminators;
 
-            // NOTE: This doesn't work as expected
+            // NOTE: The next doesn't work as expected in boost 1.45.0:
             // lastCommand %= assignment || +word || +redirection;
             lastCommand =
                 assignment      [at_c<0>(_val) = _1] ||
@@ -214,9 +224,66 @@ namespace cli { namespace parser
             command =
                 lastCommand     [_val = _1] >>
                 ending          [at_c<3>(_val) = _1];
-            start =
+            start = (
                 +command    [push_back(_val, _1)] ||
-                lastCommand [push_back(_val, _1)];
+                lastCommand [push_back(_val, _1)]
+            ) > eoi;
+
+            // Error handlers
+            on_error<fail>(
+                escape,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("a character was expected after '\'")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                variable,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("bad substitution")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                quotedString,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("\"'\" was expected")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                doubleQuotedString,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("'\"' was expected")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                redirection,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("a word was expected after the redirection "
+                                 "symbol")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                start,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("end-of-line was expected")
+                    << std::endl
+            );
 
 //            BOOST_SPIRIT_DEBUG_NODE(name);
 //            BOOST_SPIRIT_DEBUG_NODE(variable);

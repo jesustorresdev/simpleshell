@@ -20,11 +20,16 @@
 #ifndef SIMPLE_PARSER_HPP_
 #define SIMPLE_PARSER_HPP_
 
+#include <ostream>
 #include <string>
 #include <vector>
 
+#include <libintl.h>    // TODO: To use Boost.Locale when available
+#define translate(str) ::gettext(str)
+
 //#define BOOST_SPIRIT_DEBUG
 
+#include <boost/spirit/home/phoenix/object/construct.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 namespace cli { namespace parsers
@@ -42,16 +47,59 @@ namespace cli { namespace parsers
     {
         SimpleParser() : SimpleParser::base_type(start)
         {
+            using qi::_2;
+            using qi::_3;
+            using qi::eoi;
+            using qi::fail;
             using qi::lexeme;
+            using qi::on_error;
             using ascii::char_;
             using ascii::space;
+            using phoenix::construct;
 
-            escape %= lexeme['\\' >> char_];
+            escape %= '\\' > char_;
             word %= lexeme[+(escape | (char_ - space))];
-            quotedString %= lexeme['\'' >> *(char_ - '\'') >> '\''];
-            doubleQuotedString %= lexeme['"' >> *(char_ - '"') >> '"'];
+            quotedString %= lexeme['\'' >> *(char_ - '\'') > '\''];
+            doubleQuotedString %= lexeme['"' >> *(char_ - '"') > '"'];
             argument %= quotedString | doubleQuotedString | word;
-            start = +argument;
+            start = +argument > eoi;
+
+            // Error handlers
+            on_error<fail>(
+                escape,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("a character was expected after '\'")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                quotedString,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("\"'\" was expected")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                doubleQuotedString,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("'\"' was expected")
+                    << std::endl
+            );
+
+            on_error<fail>(
+                start,
+                std::cerr
+                    << construct<std::string>(_3, _2)
+                    << ": "
+                    << translate("end-of-line was expected")
+                    << std::endl
+            );
 
 //            BOOST_SPIRIT_DEBUG_NODE(word);
 //            BOOST_SPIRIT_DEBUG_NODE(quotedString);
