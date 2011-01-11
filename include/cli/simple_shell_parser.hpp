@@ -32,6 +32,8 @@
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
 #include <boost/spirit/home/phoenix/object/construct.hpp>
+#include <boost/spirit/home/phoenix/operator/comparison.hpp>
+#include <boost/spirit/home/phoenix/operator/if_else.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -177,6 +179,7 @@ namespace cli { namespace parser
             using phoenix::bind;
             using phoenix::construct;
             using phoenix::end;
+            using phoenix::if_else;
             using phoenix::insert;
             using phoenix::push_back;
 
@@ -215,7 +218,7 @@ namespace cli { namespace parser
             redirection %= redirectors > word;
             ending %= terminators;
 
-            // NOTE: The next doesn't work as expected in boost 1.45.0:
+            // NOTE: This doesn't work as expected in boost 1.45.0:
             // lastCommand %= assignment || +word || +redirection;
             lastCommand =
                 assignment      [at_c<0>(_val) = _1] ||
@@ -233,7 +236,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 escape,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
                     << translate("a character was expected after '\'")
                     << std::endl
@@ -242,7 +246,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 variable,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
                     << translate("bad substitution")
                     << std::endl
@@ -251,7 +256,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 quotedString,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
                     << translate("\"'\" was expected")
                     << std::endl
@@ -260,7 +266,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 doubleQuotedString,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
                     << translate("'\"' was expected")
                     << std::endl
@@ -269,9 +276,10 @@ namespace cli { namespace parser
             on_error<fail>(
                 redirection,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
-                    << translate("a word was expected after the redirection "
+                    << translate("a word was expected after redirection "
                                  "symbol")
                     << std::endl
             );
@@ -279,7 +287,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 start,
                 std::cerr
-                    << construct<std::string>(_3, _2)
+                    << if_else(_3 == _2, translate("(end-of-line)"),
+                        construct<std::string>(_3, _2))
                     << ": "
                     << translate("end-of-line was expected")
                     << std::endl
