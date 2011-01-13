@@ -37,6 +37,7 @@ namespace cli { namespace parsers
 {
     namespace qi = boost::spirit::qi;
     namespace ascii = boost::spirit::ascii;
+    namespace phoenix = boost::phoenix;
 
     //
     // Class SimpleParser
