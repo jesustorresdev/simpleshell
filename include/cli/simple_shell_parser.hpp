@@ -164,8 +164,10 @@ namespace cli { namespace parser
             using qi::_1;
             using qi::_2;
             using qi::_3;
+            using qi::_4;
             using qi::_a;
             using qi::_val;
+            using qi::_r1;
             using qi::eps;
             using qi::eoi;
             using qi::fail;
@@ -182,18 +184,21 @@ namespace cli { namespace parser
             using phoenix::if_else;
             using phoenix::insert;
             using phoenix::push_back;
+            using phoenix::val;
 
+            eol = eoi;
+            character %= char_;
             dereference = '$';
             special %= dereference | redirectors | terminators;
-            escape %= '\\' > char_;
+            escape %= '\\' > character;
 
             name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
             variable =
                 eps[_a = false] >>
-                dereference >>
-                -lit('{')[_a = true] >
-                name[bind(&Type::variableLookup, *this, _val, _1)] >>
-                ((eps(_a) > '}') | eps(!_a));
+                dereference >> (
+                    -lit('{')[_a = true] >
+                    name[bind(&Type::variableLookup, *this, _val, _1)]
+                ) >> ((eps(_a) > '}') | eps(!_a));
 
             quotedString %= '\'' >> *(char_ - '\'') > '\'';
             doubleQuotedString = '"' >> *(
@@ -218,79 +223,40 @@ namespace cli { namespace parser
             redirection %= redirectors > word;
             ending %= terminators;
 
-            // NOTE: This doesn't work as expected in boost 1.45.0:
-            // lastCommand %= assignment || +word || +redirection;
-            lastCommand =
+            // This statement doesn't work as expected in boost 1.45.0
+            // command %= assignment || +word || +redirection;
+            command = (
                 assignment      [at_c<0>(_val) = _1] ||
                 (+word)         [at_c<1>(_val) = _1] ||
-                (+redirection)  [at_c<2>(_val) = _1];
-            command =
-                lastCommand     [_val = _1] >>
-                ending          [at_c<3>(_val) = _1];
-            start = (
-                +command    [push_back(_val, _1)] ||
-                lastCommand [push_back(_val, _1)]
-            ) > eoi;
-
-            // Error handlers
-            on_error<fail>(
-                escape,
-                std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
-                        construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("a character was expected after '\'")
-                    << std::endl
+                (+redirection)  [at_c<2>(_val) = _1]
+            ) >> (
+                ending          [at_c<3>(_val) = _1, _r1 = true ] |
+                eps                                 [_r1 = false]
             );
+            expressions = +(
+                command(_a)[push_back(_val, _1)] >>
+                ((eps(!_a) > eol) | eps(_a))
+            ) > eol;
 
-            on_error<fail>(
-                variable,
-                std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
-                        construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("bad substitution")
-                    << std::endl
-            );
+            // start rule with locals doesn't compile in boost 1.44.0
+            start %= expressions;
 
-            on_error<fail>(
-                quotedString,
-                std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
-                        construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("\"'\" was expected")
-                    << std::endl
-            );
-
-            on_error<fail>(
-                doubleQuotedString,
-                std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
-                        construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("'\"' was expected")
-                    << std::endl
-            );
-
-            on_error<fail>(
-                redirection,
-                std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
-                        construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("a word was expected after redirection "
-                                 "symbol")
-                    << std::endl
-            );
+            character.name(translate("character"));
+            name.name(translate("name"));
+            word.name(translate("word"));
+            eol.name(translate("end-of-line"));
 
             on_error<fail>(
                 start,
                 std::cerr
-                    << if_else(_3 == _2, translate("(end-of-line)"),
+                    << val(translate("parse error, expecting"))
+                    << val(" ")
+                    << _4
+                    << val(" ")
+                    << val(translate("at"))
+                    << val(": ")
+                    << if_else(_3 == _2, val(translate("<end-of-line>")),
                         construct<std::string>(_3, _2))
-                    << ": "
-                    << translate("end-of-line was expected")
                     << std::endl
             );
 
@@ -303,8 +269,7 @@ namespace cli { namespace parser
 //            BOOST_SPIRIT_DEBUG_NODE(redirection);
 //            BOOST_SPIRIT_DEBUG_NODE(ending);
 //            BOOST_SPIRIT_DEBUG_NODE(command);
-//            BOOST_SPIRIT_DEBUG_NODE(lastCommand);
-            BOOST_SPIRIT_DEBUG_NODE(start);
+            BOOST_SPIRIT_DEBUG_NODE(expressions);
         }
 
         //
@@ -337,6 +302,8 @@ namespace cli { namespace parser
             }
         } terminators;
 
+        qi::rule<Iterator> eol;
+        qi::rule<Iterator, char()> character;
         qi::rule<Iterator, char()> dereference;
         qi::rule<Iterator, char()> special;
         qi::rule<Iterator, char()> escape;
@@ -348,8 +315,8 @@ namespace cli { namespace parser
         qi::rule<Iterator, Command::VariableAssignment()> assignment;
         qi::rule<Iterator, Command::StdioRedirection(), ascii::space_type> redirection;
         qi::rule<Iterator, Command::TypeOfTerminator(), ascii::space_type> ending;
-        qi::rule<Iterator, Command(), ascii::space_type> command;
-        qi::rule<Iterator, Command(), ascii::space_type> lastCommand;
+        qi::rule<Iterator, Command(bool&), ascii::space_type> command;
+        qi::rule<Iterator, std::vector<Command>(), qi::locals<bool>, ascii::space_type> expressions;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
 
         //

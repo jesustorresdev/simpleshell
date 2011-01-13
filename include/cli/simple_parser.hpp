@@ -30,6 +30,7 @@
 //#define BOOST_SPIRIT_DEBUG
 
 #include <boost/spirit/home/phoenix/object/construct.hpp>
+#include <boost/spirit/home/phoenix/operator/if_else.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 namespace cli { namespace parsers
@@ -49,6 +50,7 @@ namespace cli { namespace parsers
         {
             using qi::_2;
             using qi::_3;
+            using qi::_4;
             using qi::eoi;
             using qi::fail;
             using qi::lexeme;
@@ -56,48 +58,31 @@ namespace cli { namespace parsers
             using ascii::char_;
             using ascii::space;
             using phoenix::construct;
+            using phoenix::val;
 
-            escape %= '\\' > char_;
+            eol = eoi;
+            character %= char_;
+            escape %= '\\' > character;
             word %= lexeme[+(escape | (char_ - space))];
             quotedString %= lexeme['\'' >> *(char_ - '\'') > '\''];
             doubleQuotedString %= lexeme['"' >> *(char_ - '"') > '"'];
             argument %= quotedString | doubleQuotedString | word;
-            start = +argument > eoi;
+            start = +argument > eol;
 
-            // Error handlers
-            on_error<fail>(
-                escape,
-                std::cerr
-                    << construct<std::string>(_3, _2)
-                    << ": "
-                    << translate("a character was expected after '\'")
-                    << std::endl
-            );
-
-            on_error<fail>(
-                quotedString,
-                std::cerr
-                    << construct<std::string>(_3, _2)
-                    << ": "
-                    << translate("\"'\" was expected")
-                    << std::endl
-            );
-
-            on_error<fail>(
-                doubleQuotedString,
-                std::cerr
-                    << construct<std::string>(_3, _2)
-                    << ": "
-                    << translate("'\"' was expected")
-                    << std::endl
-            );
+            character.name(translate("character"));
+            eol.name(translate("end-of-line"));
 
             on_error<fail>(
                 start,
                 std::cerr
-                    << construct<std::string>(_3, _2)
-                    << ": "
-                    << translate("end-of-line was expected")
+                    << val(translate("parse error, expecting"))
+                    << val(" ")
+                    << _4
+                    << val(" ")
+                    << val(translate("at"))
+                    << val(": ")
+                    << if_else(_3 == _2, val(translate("<end-of-line>")),
+                        construct<std::string>(_3, _2))
                     << std::endl
             );
 
@@ -108,6 +93,8 @@ namespace cli { namespace parsers
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
+        qi::rule<Iterator> eol;
+        qi::rule<Iterator, char()> character;
         qi::rule<Iterator, char()> escape;
         qi::rule<Iterator, std::string(), ascii::space_type> word;
         qi::rule<Iterator, std::string(), ascii::space_type> quotedString;
