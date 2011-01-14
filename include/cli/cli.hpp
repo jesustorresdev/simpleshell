@@ -23,7 +23,7 @@
 #include <string>
 
 #include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/callbacks.hpp>
@@ -72,6 +72,14 @@ namespace cli
             CommandLineInterpreter(bool useReadline = true);
             CommandLineInterpreter(std::istream& in, std::ostream& out,
                 bool useReadline = true);
+            CommandLineInterpreter(boost::shared_ptr<ParserType> parser,
+                bool useReadline = true);
+            CommandLineInterpreter(ParserType* parser,
+                bool useReadline = true);
+            CommandLineInterpreter(boost::shared_ptr<ParserType> parser,
+                std::istream& in, std::ostream& out, bool useReadline = true);
+            CommandLineInterpreter(ParserType* parser, std::istream& in,
+                std::ostream& out, bool useReadline = true);
 
             //
             // Methods to interpret command-line input
@@ -135,12 +143,18 @@ namespace cli
             virtual void preLoop();
             virtual void postLoop();
 
+            //
+            // Command-line parser factory
+            //
+
+            virtual ParserType* parserFactory();
+
         private:
             std::istream& in_;
             std::ostream& out_;
             readline::Readline readLine_;
 
-            boost::scoped_ptr<ParserType> lineParser_;
+            boost::shared_ptr<ParserType> lineParser_;
 
             std::string introText_;
             std::string promptText_;
@@ -161,6 +175,15 @@ namespace cli
             template <typename Interpreter, typename Functor>
             friend void cli::callbacks::SetCallbackImpl<Callback>::
                 setCallback(Interpreter&, Functor);
+
+            //
+            // No-op memory deallocator
+            //
+
+            struct noOpDelete
+            {
+                void operator()(ParserType*) {}
+            };
     };
 
     template <template <typename> class Parser, typename Command>
@@ -169,17 +192,70 @@ namespace cli
         : in_(std::cin),
           out_(std::cout),
           readLine_(std::cin, std::cout, useReadline),
-          lineParser_(new ParserType)
+          lineParser_(parserFactory())
     {}
 
     template <template <typename> class Parser, typename Command>
     CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
-        std::istream& in, std::ostream& out, bool useReadline)
+        std::istream& in,
+        std::ostream& out,
+        bool useReadline)
         : in_(in),
           out_(out),
           readLine_(in, out, useReadline),
-          lineParser_(new ParserType)
+          lineParser_(parserFactory())
     {}
+
+    template <template <typename> class Parser, typename Command>
+    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+        boost::shared_ptr<ParserType> parser,
+        bool useReadline)
+        : in_(std::cin),
+          out_(std::cout),
+          readLine_(std::cin, std::cout, useReadline),
+          lineParser_(parser)
+    {}
+
+    template <template <typename> class Parser, typename Command>
+    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+        ParserType* parser,
+        bool useReadline)
+        : in_(std::cin),
+          out_(std::cout),
+          readLine_(std::cin, std::cout, useReadline),
+          lineParser_(parser, noOpDelete())
+    {}
+
+    template <template <typename> class Parser, typename Command>
+    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+        boost::shared_ptr<ParserType> parser,
+        std::istream& in,
+        std::ostream& out,
+        bool useReadline)
+        : in_(in),
+          out_(out),
+          readLine_(in, out, useReadline),
+          lineParser_(parser)
+    {}
+
+    template <template <typename> class Parser, typename Command>
+    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+        ParserType* parser,
+        std::istream& in,
+        std::ostream& out,
+        bool useReadline)
+        : in_(in),
+          out_(out),
+          readLine_(in, out, useReadline),
+          lineParser_(parser, noOpDelete())
+    {}
+
+    template <template <typename> class Parser, typename Command>
+    typename CommandLineInterpreter<Parser, Command>::ParserType*
+    CommandLineInterpreter<Parser, Command>::parserFactory()
+    {
+        return new ParserType;
+    }
 
     template <template <typename> class Parser, typename Command>
     void CommandLineInterpreter<Parser, Command>::loop()
