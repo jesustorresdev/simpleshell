@@ -34,7 +34,7 @@ namespace cli { namespace auxiliary
         int length = strings.size();
         boost::shared_array<const char*> argv =
             boost::shared_array<const char*>(new const char*[length]);
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             argv[i] = strings[i].c_str();
         }
         return argv;

@@ -20,6 +20,7 @@
 #define CALLBACKS_HPP_
 
 #include <string>
+#include <vector>
 
 #include <cli/exceptions.hpp>
 
@@ -161,7 +162,7 @@ namespace cli { namespace callbacks
     template <typename Interpreter>
     struct VariableLookupCallback
     {
-        typedef void (Type)(std::string&, const std::string&);
+        typedef std::string (Type)(const std::string&);
         static const char* name() { return "VariableLookupCallback"; }
     };
 
@@ -171,6 +172,25 @@ namespace cli { namespace callbacks
         template <typename Interpreter, typename Functor>
         static void setCallback(Interpreter& interpreter, Functor function)
             { interpreter.lineParser_->variableLookupCallback_ = function; }
+    };
+
+    //
+    // PathnameExpansionCallback
+    //
+
+    template <typename Interpreter>
+    struct PathnameExpansionCallback
+    {
+        typedef std::vector<std::string> (Type)(const std::string&);
+        static const char* name() { return "PathnameExpansionCallback"; }
+    };
+
+    template<>
+    struct SetCallbackImpl<PathnameExpansionCallback>
+    {
+        template <typename Interpreter, typename Functor>
+        static void setCallback(Interpreter& interpreter, Functor function)
+            { interpreter.lineParser_->PathnameExpansionCallback_ = function; }
     };
 }}
 

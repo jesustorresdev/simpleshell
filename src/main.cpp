@@ -37,8 +37,9 @@ bool doCommandCallback(const InterpreterType::CommandType& commands)
 {
     if (! commands.empty()) {
         std::cout << commands << std::endl;
-        InterpreterType::CommandType::const_iterator iter;
-        for (iter = commands.begin(); iter < commands.end(); ++iter) {
+        for (InterpreterType::CommandType::const_iterator iter =
+            commands.begin(); iter < commands.end(); ++iter)
+        {
             if (! iter->arguments.empty()) {
                 if (iter->arguments[0] == "exit") {
                     return true;

@@ -19,6 +19,7 @@
 #ifndef SIMPLE_SHELL_PARSER_HPP_
 #define SIMPLE_SHELL_PARSER_HPP_
 
+#include <cerrno>
 #include <string>
 #include <vector>
 
@@ -27,19 +28,23 @@
 
 //#define BOOST_SPIRIT_DEBUG
 
+#include <boost/algorithm/string/join.hpp>
 #include <boost/function.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
+#include <boost/spirit/home/phoenix/bind/bind_function.hpp>
 #include <boost/spirit/home/phoenix/object/construct.hpp>
 #include <boost/spirit/home/phoenix/operator/comparison.hpp>
 #include <boost/spirit/home/phoenix/operator/if_else.hpp>
+#include <boost/spirit/home/phoenix/statement/sequence.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/callbacks.hpp>
+#include <cli/glob.hpp>
 
 namespace cli { namespace parser
 {
@@ -174,16 +179,20 @@ namespace cli { namespace parser
             using qi::lexeme;
             using qi::lit;
             using qi::on_error;
+            using qi::raw;
             using ascii::char_;
             using ascii::space;
+            using phoenix::at;
             using phoenix::at_c;
             using phoenix::begin;
             using phoenix::bind;
             using phoenix::construct;
             using phoenix::end;
+            using phoenix::empty;
             using phoenix::if_else;
             using phoenix::insert;
             using phoenix::push_back;
+            using phoenix::size;
             using phoenix::val;
 
             eol = eoi;
@@ -197,12 +206,12 @@ namespace cli { namespace parser
                 eps[_a = false] >>
                 dereference >> (
                     -lit('{')[_a = true] >
-                    name[bind(&Type::variableLookup, *this, _val, _1)]
+                    name[_val = bind(&Type::variableLookup, *this, _1)]
                 ) >> ((eps(_a) > '}') | eps(!_a));
 
             quotedString %= '\'' >> *(char_ - '\'') > '\'';
             doubleQuotedString = '"' >> *(
-                variable    [insert(_val, end(_val), begin(_1), end(_1))] |
+                variable                    [_val += _1] |
                 (
                     char_('\'')             [push_back(_val, _1)] >>
                     *((char_ - '\'' - '"')  [push_back(_val, _1)]) >>
@@ -212,22 +221,34 @@ namespace cli { namespace parser
             ) > '"';
 
             word = +(
-                variable            [insert(_val, end(_val), begin(_1), end(_1))] |
-                quotedString        [insert(_val, end(_val), begin(_1), end(_1))] |
-                doubleQuotedString  [insert(_val, end(_val), begin(_1), end(_1))] |
+                variable            [_val += _1] |
+                quotedString        [_val += bind(&Type::globEscape, _1)] |
+                doubleQuotedString  [_val += bind(&Type::globEscape, _1)] |
                 escape                      [push_back(_val, _1)] |
                 (char_ - space - special)   [push_back(_val, _1)]
             );
 
-            assignment %= name >> '=' >> -word;
-            redirection %= redirectors > word;
+            expandedWord = word
+                [_val = bind(&Type::pathnameExpansion, *this, _1)];
+            variableValue = expandedWord[_val = bind(&Type::stringsJoin, _1)];
+            unambiguousRedirection = eps(_r1);
+
+            assignment %= name >> '=' >> -variableValue;
+            redirection =
+                redirectors     [at_c<0>(_val) = _1] >
+                expandedWord	[at_c<1>(_val) = at(_1, 0), _a = size(_1)] >
+                unambiguousRedirection(_a == 1);
             ending %= terminators;
 
             // This statement doesn't work as expected in boost 1.45.0
             // command %= assignment || +word || +redirection;
             command = (
                 assignment      [at_c<0>(_val) = _1] ||
-                (+word)         [at_c<1>(_val) = _1] ||
+                (
+                    +expandedWord
+                    [insert(at_c<1>(_val), end(at_c<1>(_val)),
+                        begin(_1), end(_1))]
+                ) ||
                 (+redirection)  [at_c<2>(_val) = _1]
             ) >> (
                 ending          [at_c<3>(_val) = _1, _r1 = true ] |
@@ -243,12 +264,16 @@ namespace cli { namespace parser
 
             character.name(translate("character"));
             name.name(translate("name"));
-            word.name(translate("word"));
+            expandedWord.name(translate("word"));
+            variableValue.name(translate("word"));
+            unambiguousRedirection.name(translate("unambiguous redirection"));
             eol.name(translate("end-of-line"));
 
             on_error<fail>(
                 start,
                 std::cerr
+                    << val(::program_invocation_short_name)
+                    << val(": ")
                     << val(translate("parse error, expecting"))
                     << val(" ")
                     << _4
@@ -264,6 +289,7 @@ namespace cli { namespace parser
 //            BOOST_SPIRIT_DEBUG_NODE(variable);
 //            BOOST_SPIRIT_DEBUG_NODE(quotedString);
 //            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
+//            BOOST_SPIRIT_DEBUG_NODE(expandedWord);
 //            BOOST_SPIRIT_DEBUG_NODE(word);
 //            BOOST_SPIRIT_DEBUG_NODE(assignment);
 //            BOOST_SPIRIT_DEBUG_NODE(redirection);
@@ -312,11 +338,17 @@ namespace cli { namespace parser
         qi::rule<Iterator, std::string()> quotedString;
         qi::rule<Iterator, std::string()> doubleQuotedString;
         qi::rule<Iterator, std::string()> word;
+        qi::rule<Iterator, std::vector<std::string>()> expandedWord;
+        qi::rule<Iterator, std::string()> variableValue;
+        qi::rule<Iterator, void(bool)> unambiguousRedirection;
         qi::rule<Iterator, Command::VariableAssignment()> assignment;
-        qi::rule<Iterator, Command::StdioRedirection(), ascii::space_type> redirection;
-        qi::rule<Iterator, Command::TypeOfTerminator(), ascii::space_type> ending;
+        qi::rule<Iterator, Command::StdioRedirection(),
+            qi::locals<int>, ascii::space_type> redirection;
+        qi::rule<Iterator, Command::TypeOfTerminator(),
+            ascii::space_type> ending;
         qi::rule<Iterator, Command(bool&), ascii::space_type> command;
-        qi::rule<Iterator, std::vector<Command>(), qi::locals<bool>, ascii::space_type> expressions;
+        qi::rule<Iterator, std::vector<Command>(),
+            qi::locals<bool>, ascii::space_type> expressions;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
 
         //
@@ -324,22 +356,79 @@ namespace cli { namespace parser
         //
 
         typedef SimpleShellParser<Iterator> Type;
+
         typedef typename callbacks::VariableLookupCallback<Type>::Type
             VariableLookupCallback;
+        typedef typename callbacks::PathnameExpansionCallback<Type>::Type
+            PathnameExpansionCallback;
 
         protected:
-            void variableLookup(std::string &value, const std::string& name);
+
+            //
+            // Hook methods
+            //
+
+            std::string variableLookup(const std::string& name);
+            std::vector<std::string> pathnameExpansion(
+                const std::string& pattern);
 
         private:
+
+            //
+            // Callback functions objects
+            //
+
             boost::function<VariableLookupCallback> variableLookupCallback_;
+            boost::function<PathnameExpansionCallback>
+                pathnameExpansionCallback_;
+
+            //
+            // Auxiliary methods
+            //
+
+            static std::string globEscape(const std::string& pattern)
+                { return glob::Glob::escape(pattern); }
+
+            static std::string stringsJoin(const std::vector<std::string>& v)
+                { return boost::algorithm::join(v, std::string(1, ' ')); }
     };
 
     template <typename Iterator>
-    void SimpleShellParser<Iterator>::variableLookup(std::string& value,
+    std::string SimpleShellParser<Iterator>::variableLookup(
         const std::string& name)
     {
-        variableLookupCallback_.empty() ?
-            value.clear() : variableLookupCallback_(value, name);
+        return variableLookupCallback_.empty() ?
+            std::string() : variableLookupCallback_(name);
+    }
+
+    template <typename Iterator>
+    std::vector<std::string> SimpleShellParser<Iterator>::pathnameExpansion(
+        const std::string& pattern)
+    {
+        if (! pathnameExpansionCallback_.empty()) {
+            return pathnameExpansionCallback_(pattern);
+        }
+
+        using namespace glob;
+
+        Glob glob(pattern, Glob::EXPAND_BRACE_EXPRESSIONS |
+            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE_WITH_CHECK);
+
+        typename Glob::ErrorsType errors = glob.getErrors();
+        for (Glob::ErrorsType::const_iterator iter = errors.begin();
+            iter < errors.end(); ++iter)
+        {
+            std::cerr
+                << ::program_invocation_short_name
+                << ": "
+                << translate("i/o error at")
+                << " "
+                << iter->first
+                << ": "
+                << iter->second.message();
+        }
+
+        return glob;
     }
 }}
 

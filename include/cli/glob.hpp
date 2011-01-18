@@ -68,7 +68,6 @@ namespace glob
             //
 
             operator const std::vector<std::string>&() const;
-            operator std::vector<std::string>() const;
             operator std::vector<filesystem::path>() const;
 
             //
@@ -87,7 +86,7 @@ namespace glob
         protected:
              ErrorsType errors_;
 
-             bool onError(const std::string& pathName,
+             virtual bool onError(const std::string& pathName,
                  system::error_code errorCode);
 
         private:
@@ -101,16 +100,12 @@ namespace glob
         return pathNames_;
     }
 
-    inline Glob::operator std::vector<std::string>() const
-    {
-        return pathNames_;
-    }
-
     inline Glob::operator std::vector<filesystem::path>() const
     {
         std::vector<filesystem::path> pathNames;
-        std::vector<std::string>::const_iterator iter;
-        for (iter = pathNames_.begin(); iter < pathNames_.end(); ++iter) {
+        for (std::vector<std::string>::const_iterator iter =
+            pathNames_.begin(); iter < pathNames_.end(); ++iter)
+        {
             pathNames.push_back(filesystem::path(*iter));
         }
         return pathNames;

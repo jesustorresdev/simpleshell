@@ -65,8 +65,10 @@ namespace glob
 
         currentGlobObject.release();
 
-        for (char** p = glob.gl_pathv; p < (p + glob.gl_pathc); ++p) {
-            pathNames_.push_back(*p);
+        if (glob.gl_pathc) {
+            for (char** p = glob.gl_pathv; *p != NULL; ++p) {
+                pathNames_.push_back(*p);
+            }
         }
 
         posix::globfree(&glob);
@@ -81,20 +83,23 @@ namespace glob
 
     std::string Glob::escape(const std::string& pattern)
     {
-        std::string escaped_string;
-        std::string::const_iterator iter;
-        for (iter = pattern.begin(); iter < pattern.end(); ++iter) {
-            switch (*iter){
+        std::string escaped;
+
+        for (std::string::const_iterator iter = pattern.begin();
+            iter < pattern.end(); ++iter)
+        {
+            switch (*iter) {
+            case '~':   // EXPAND_TILDE
             case '*':
             case '?':
             case '[':
             case '\\':
-                escaped_string.push_back('\\');
+                escaped.push_back('\\');
             default:
-                escaped_string.push_back(*iter);
+                escaped.push_back(*iter);
             }
         }
 
-        return escaped_string;
+        return escaped;
     }
 }
