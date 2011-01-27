@@ -28,8 +28,8 @@ interface
     { Struct where store the information required for command execution }
     type
         StdioRedirection = record
-            argument : Pchar;           (* declared as const char* in C *)
             typeOfRedirection : longint;
+            argument : Pchar;           (* declared as const char* in C *)
         end;
         
         PStdioRedirection = ^StdioRedirection;
