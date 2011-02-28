@@ -56,10 +56,11 @@ namespace cli { namespace auxiliary
     const char** stdVectorStringToArgV(const std::vector<std::string> &strings)
     {
         int length = strings.size();
-        const char** argv = new const char*[length];
+        const char** argv = new const char*[length + 1];
         for(int i = 0; i < length; i++) {
             argv[i] = strings[i].c_str();
         }
+        argv[length] = NULL;
         return argv;
     }
 }}
