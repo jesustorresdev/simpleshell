@@ -232,12 +232,16 @@ namespace cli { namespace parser
                 [_val = bind(&Type::pathnameExpansion, *this, _1)];
             variableValue = expandedWord[_val = bind(&Type::stringsJoin, _1)];
             unambiguousRedirection = eps(_r1);
+            redirectionArgument = (
+                (
+                    &expandedWord[_a = size(_1)] >
+                    unambiguousRedirection(_a == 1)
+
+                ) >> expandedWord[_val = at(_1, 0)]
+            ) | (eps > expandedWord);
 
             assignment %= name >> '=' >> -variableValue;
-            redirection =
-                redirectors     [at_c<0>(_val) = _1] >
-                expandedWord	[at_c<1>(_val) = at(_1, 0), _a = size(_1)] >
-                unambiguousRedirection(_a == 1);
+            redirection %= redirectors >> redirectionArgument;
             ending %= terminators;
 
             // This statement doesn't work as expected in boost 1.45.0
@@ -341,9 +345,11 @@ namespace cli { namespace parser
         qi::rule<Iterator, std::vector<std::string>()> expandedWord;
         qi::rule<Iterator, std::string()> variableValue;
         qi::rule<Iterator, void(bool)> unambiguousRedirection;
+        qi::rule<Iterator, std::string(),
+            qi::locals<int> > redirectionArgument;
         qi::rule<Iterator, Command::VariableAssignment()> assignment;
         qi::rule<Iterator, Command::StdioRedirection(),
-            qi::locals<int>, ascii::space_type> redirection;
+            ascii::space_type> redirection;
         qi::rule<Iterator, Command::TypeOfTerminator(),
             ascii::space_type> ending;
         qi::rule<Iterator, Command(bool&), ascii::space_type> command;
