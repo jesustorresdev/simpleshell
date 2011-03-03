@@ -53,12 +53,14 @@ namespace glob
                 NO_PATH_NAMES_SORT                  = GLOB_NOSORT,
                 NO_PATH_NAMES_CHECK                 = GLOB_NOCHECK,
                 NO_ESCAPE_CHARACTER                 = GLOB_NOESCAPE,
+#if defined(_GNU_SOURCE)
                 NO_MAGIC                            = GLOB_NOMAGIC,
                 MATCH_LEADING_PERIOD                = GLOB_PERIOD,
                 FIND_DIRECTORIES_ONLY               = GLOB_ONLYDIR,
                 EXPAND_BRACE_EXPRESSIONS            = GLOB_BRACE,
                 EXPAND_TILDE                        = GLOB_TILDE,
-                EXPAND_TILDE_WITH_CHECK             = GLOB_TILDE_CHECK
+                EXPAND_TILDE_WITH_CHECK             = GLOB_TILDE_CHECK,
+#endif /* _GNU_SOURCE */
             };
 
             Glob(const std::string& pattern, GlobFlags flags = NONE);

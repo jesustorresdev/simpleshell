@@ -89,7 +89,12 @@ namespace dl
             boost::function<Signature>
             getFunction(const std::string& symbol)
                 { return getFunction<Signature>(libraryHandle_, symbol); }
+            
+            template<typename Type>
+            Type* getVariable(const std::string& symbol)
+                { return getVariable<Type>(libraryHandle_, symbol); }
 
+#if defined(_GNU_SOURCE)
             template<typename Signature>
             boost::function<Signature>
             getDefaultFunction(const std::string& symbol)
@@ -101,16 +106,13 @@ namespace dl
                 { return getFunction<Signature>(RTLD_NEXT, symbol); }
 
             template<typename Type>
-            Type* getVariable(const std::string& symbol)
-                { return getVariable<Type>(libraryHandle_, symbol); }
-
-            template<typename Type>
             Type* getDefaultVariable(const std::string& symbol)
                 { return getVariable<Type>(RTLD_DEFAULT, symbol); }
 
             template<typename Type>
             Type* getNextVariable(const std::string& symbol)
                 { return getVariable<Type>(RTLD_NEXT, symbol); }
+#endif /* _GNU_SOURCE */
 
             //
             // Error handling
