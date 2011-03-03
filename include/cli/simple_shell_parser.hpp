@@ -164,6 +164,9 @@ namespace cli { namespace parser
     struct SimpleShellParser
         : qi::grammar<Iterator, std::vector<Command>(), ascii::space_type>
     {
+        typedef SimpleShellParser<Iterator> Type;
+        typedef std::vector<Command> ReturnType;
+
         SimpleShellParser() : SimpleShellParser::base_type(start)
         {
             using qi::_1;
@@ -360,8 +363,6 @@ namespace cli { namespace parser
         //
         // Callback functions
         //
-
-        typedef SimpleShellParser<Iterator> Type;
 
         typedef typename callbacks::VariableLookupCallback<Type>::Type
             VariableLookupCallback;

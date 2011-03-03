@@ -47,6 +47,9 @@ namespace cli { namespace parsers
     struct SimpleParser
         : qi::grammar<Iterator, std::vector<std::string>(), ascii::space_type>
     {
+        typedef SimpleParser<Iterator> Type;
+        typedef std::vector<std::string> ReturnType;
+
         SimpleParser() : SimpleParser::base_type(start)
         {
             using qi::_2;

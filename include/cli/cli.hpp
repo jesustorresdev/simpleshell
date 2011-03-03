@@ -39,14 +39,14 @@ namespace cli
     // Class CommandLineInterpreter
     //
 
-    template <template<typename> class Parser, typename Command>
+    template <template<typename> class Parser>
     class CommandLineInterpreter
     {
         public:
-            typedef CommandLineInterpreter<Parser, Command> Type;
+            typedef CommandLineInterpreter<Parser> Type;
 
             typedef Parser<std::string::iterator> ParserType;
-            typedef Command CommandType;
+            typedef typename ParserType::ReturnType CommandType;
 
             //
             // Callback functions types
@@ -125,7 +125,7 @@ namespace cli
             // Hook methods invoked for command execution
             //
 
-            virtual bool doCommand(const Command& command);
+            virtual bool doCommand(const CommandType& command);
             virtual bool emptyLine();
 
             //
@@ -186,8 +186,8 @@ namespace cli
             };
     };
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         bool useReadline)
         : in_(std::cin),
           out_(std::cout),
@@ -195,8 +195,8 @@ namespace cli
           lineParser_(parserFactory())
     {}
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         std::istream& in,
         std::ostream& out,
         bool useReadline)
@@ -206,8 +206,8 @@ namespace cli
           lineParser_(parserFactory())
     {}
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         boost::shared_ptr<ParserType> parser,
         bool useReadline)
         : in_(std::cin),
@@ -216,8 +216,8 @@ namespace cli
           lineParser_(parser)
     {}
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         ParserType* parser,
         bool useReadline)
         : in_(std::cin),
@@ -226,8 +226,8 @@ namespace cli
           lineParser_(parser, noOpDelete())
     {}
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         boost::shared_ptr<ParserType> parser,
         std::istream& in,
         std::ostream& out,
@@ -238,8 +238,8 @@ namespace cli
           lineParser_(parser)
     {}
 
-    template <template <typename> class Parser, typename Command>
-    CommandLineInterpreter<Parser, Command>::CommandLineInterpreter(
+    template <template <typename> class Parser>
+    CommandLineInterpreter<Parser>::CommandLineInterpreter(
         ParserType* parser,
         std::istream& in,
         std::ostream& out,
@@ -250,15 +250,15 @@ namespace cli
           lineParser_(parser, noOpDelete())
     {}
 
-    template <template <typename> class Parser, typename Command>
-    typename CommandLineInterpreter<Parser, Command>::ParserType*
-    CommandLineInterpreter<Parser, Command>::parserFactory()
+    template <template <typename> class Parser>
+    typename CommandLineInterpreter<Parser>::ParserType*
+    CommandLineInterpreter<Parser>::parserFactory()
     {
         return new ParserType;
     }
 
-    template <template <typename> class Parser, typename Command>
-    void CommandLineInterpreter<Parser, Command>::loop()
+    template <template <typename> class Parser>
+    void CommandLineInterpreter<Parser>::loop()
     {
         preLoop();
 
@@ -281,8 +281,8 @@ namespace cli
         postLoop();
     }
 
-    template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::interpretOneLine(
+    template <template <typename> class Parser>
+    bool CommandLineInterpreter<Parser>::interpretOneLine(
         std::string line)
     {
         preDoCommand(line);
@@ -294,7 +294,7 @@ namespace cli
             lastCommand_ = line;
         }
 
-        Command command;
+        CommandType command;
         std::string::iterator begin = line.begin();
         std::string::iterator end = line.end();
         typename ParserType::skipper_type skipperParser;
@@ -308,16 +308,16 @@ namespace cli
         return false;
     }
 
-    template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::doCommand(
-        const Command& command)
+    template <template <typename> class Parser>
+    bool CommandLineInterpreter<Parser>::doCommand(
+        const CommandType& command)
     {
         return doCommandCallback_.empty() ?
             false : doCommandCallback_(command);
     }
 
-    template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::emptyLine()
+    template <template <typename> class Parser>
+    bool CommandLineInterpreter<Parser>::emptyLine()
     {
         if (! emptyLineCallback_.empty()) {
             return emptyLineCallback_();
@@ -328,39 +328,39 @@ namespace cli
         return false;
     }
 
-    template <template <typename> class Parser, typename Command>
-    bool CommandLineInterpreter<Parser, Command>::postDoCommand(
+    template <template <typename> class Parser>
+    bool CommandLineInterpreter<Parser>::postDoCommand(
         bool isFinished, const std::string& line)
     {
         return postDoCommandCallback_.empty() ?
             isFinished : postDoCommandCallback_(isFinished, line);
     }
 
-    template <template <typename> class Parser, typename Command>
-    void CommandLineInterpreter<Parser, Command>::preLoop()
+    template <template <typename> class Parser>
+    void CommandLineInterpreter<Parser>::preLoop()
     {
         if (! preLoopCallback_.empty()) {
             preLoopCallback_();
         }
     }
 
-    template <template <typename> class Parser, typename Command>
-    void CommandLineInterpreter<Parser, Command>::postLoop()
+    template <template <typename> class Parser>
+    void CommandLineInterpreter<Parser>::postLoop()
     {
         if (! postLoopCallback_.empty()) {
             postLoopCallback_();
         }
     }
 
-    template <template <typename> class Parser, typename Command>
+    template <template <typename> class Parser>
     template <template <typename> class Callback, typename Functor>
-    void CommandLineInterpreter<Parser, Command>::setCallback(Functor function)
+    void CommandLineInterpreter<Parser>::setCallback(Functor function)
     {
         callbacks::SetCallbackImpl<Callback>::setCallback(*this, function);
     }
 
-    template <template <typename> class Parser, typename Command>
-    void CommandLineInterpreter<Parser, Command>::setHistoryFile(
+    template <template <typename> class Parser>
+    void CommandLineInterpreter<Parser>::setHistoryFile(
         const std::string& fileName)
     {
         readLine_.clearHistory();

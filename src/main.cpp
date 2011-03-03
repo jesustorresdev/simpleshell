@@ -30,8 +30,8 @@ const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
 
 const char PROMPT_TEXT[] = "$ ";
 
-typedef cli::CommandLineInterpreter<cli::parser::SimpleShellParser,
-    std::vector<cli::parser::Command> > InterpreterType;
+typedef cli::CommandLineInterpreter<
+    cli::parser::SimpleShellParser> InterpreterType;
 
 bool doCommandCallback(const InterpreterType::CommandType& commands)
 {
