@@ -262,7 +262,7 @@ namespace cli
     {
         preLoop();
 
-        if (internals::isStreamTty(out_)) {
+        if (internals::isStreamTty(in_) && internals::isStreamTty(out_)) {
             if (! introText_.empty()) {
                 out_ << introText_ << std::endl;
             }

@@ -43,7 +43,7 @@ namespace cli { namespace internals
     bool isStreamTty(const std::ios& stream)
     {
         int fd = ::fileno(stream);
-        if (fd > 0) {
+        if (fd >= 0) {
             return ::isatty(fd) != 0 ? true : false;
         }
         return false;

@@ -166,15 +166,19 @@ namespace cli { namespace readline
             (readlineLibrary_->getLastError() != system::errc::success)) {
             readlineLibrary_.reset();
         }
+        else if (! internals::isStreamTty(in_) ||
+                 ! internals::isStreamTty(out_)) {
+            readlineLibrary_.reset();
+        }
 
         // Set the input and output streams for readline library
-        if (readlineLibrary_ && internals::isStreamTty(in_)) {
+        if (readlineLibrary_) {
             readlineLibrary_->setInStream(in_);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
             }
         }
-        if (readlineLibrary_ && internals::isStreamTty(out_)) {
+        if (readlineLibrary_) {
             readlineLibrary_->setOutStream(out_);
             if (readlineLibrary_->getLastError() != system::errc::success) {
                 readlineLibrary_.reset();
@@ -199,7 +203,7 @@ namespace cli { namespace readline
             return isOk;
         }
         else {
-            if (internals::isStreamTty(out_)) {
+            if (internals::isStreamTty(in_) && internals::isStreamTty(out_)) {
                 out_ << prompt;
             }
             std::getline(in_, line);
