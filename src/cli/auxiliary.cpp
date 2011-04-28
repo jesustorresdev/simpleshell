@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -27,18 +28,30 @@
 
 namespace cli { namespace auxiliary
 {
+    //
+    // Functions for std::vector<std::string> to char** conversion
+    //
 
-    boost::shared_array<const char*>
+    void deleteArgV(char** argv)
+    {
+        while(*argv != NULL) {
+            delete(*argv);
+            ++argv;
+        }
+    }
+
+    boost::shared_array<char*>
     stdVectorStringToArgV(const std::vector<std::string> &strings)
     {
+
         int length = strings.size();
-        boost::shared_array<const char*> argv =
-            boost::shared_array<const char*>(new const char*[length + 1]);
-        for (int i = 0; i < length; i++) {
-            argv[i] = strings[i].c_str();
+        boost::shared_array<char*> argv =
+            boost::shared_array<char*>(new char*[length + 1], deleteArgV);
+        for (int i = 0; i < length; ++i) {
+            argv[i] = new char[strings[i].size() + 1];
+            std::strcpy(argv[i], strings[i].c_str());
         }
         argv[length] = NULL;
         return argv;
     }
-
 }}

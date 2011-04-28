@@ -28,7 +28,7 @@
 namespace cli { namespace auxiliary
 {
 
-    boost::shared_array<const char*> stdVectorStringToArgV(
+    boost::shared_array<char*> stdVectorStringToArgV(
         const std::vector<std::string> &strings);
 
 }}
