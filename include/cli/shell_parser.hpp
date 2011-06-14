@@ -389,6 +389,11 @@ namespace cli { namespace parser
             boost::function<PathnameExpansionCallback>
                 pathnameExpansionCallback_;
 
+            template <template <typename> class Callback>
+            template <typename Interpreter, typename Functor>
+            friend void cli::callbacks::SetCallbackImpl<Callback>::
+                setCallback(Interpreter&, Functor);
+
             //
             // Auxiliary methods
             //
