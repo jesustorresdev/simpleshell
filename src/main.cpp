@@ -22,7 +22,7 @@
 #include <cli/auxiliary.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/cli.hpp>
-#include <cli/simple_shell_parser.hpp>
+#include <cli/shell_parser.hpp>
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
@@ -30,8 +30,7 @@ const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
 
 const char PROMPT_TEXT[] = "$ ";
 
-typedef cli::CommandLineInterpreter<
-    cli::parser::SimpleShellParser> InterpreterType;
+typedef cli::CommandLineInterpreter<cli::parser::ShellParser> InterpreterType;
 
 bool doCommandCallback(const InterpreterType::CommandType& commands)
 {

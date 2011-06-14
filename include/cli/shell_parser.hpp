@@ -1,7 +1,7 @@
 /*
- * simple_shell_parser.hpp - Parser designed to make simple shells
+ * shell_parser.hpp - Parser designed to emulate a very simple shell
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef SIMPLE_SHELL_PARSER_HPP_
-#define SIMPLE_SHELL_PARSER_HPP_
+#ifndef SHELL_PARSER_HPP_
+#define SHELL_PARSER_HPP_
 
 #include <cerrno>
 #include <string>
@@ -161,13 +161,13 @@ namespace cli { namespace parser
     //
 
     template <typename Iterator>
-    struct SimpleShellParser
+    struct ShellParser
         : qi::grammar<Iterator, std::vector<Command>(), ascii::space_type>
     {
-        typedef SimpleShellParser<Iterator> Type;
+        typedef ShellParser<Iterator> Type;
         typedef std::vector<Command> ReturnType;
 
-        SimpleShellParser() : SimpleShellParser::base_type(start)
+        ShellParser() : ShellParser::base_type(start)
         {
             using qi::_1;
             using qi::_2;
@@ -401,15 +401,14 @@ namespace cli { namespace parser
     };
 
     template <typename Iterator>
-    std::string SimpleShellParser<Iterator>::variableLookup(
-        const std::string& name)
+    std::string ShellParser<Iterator>::variableLookup(const std::string& name)
     {
         return variableLookupCallback_.empty() ?
             std::string() : variableLookupCallback_(name);
     }
 
     template <typename Iterator>
-    std::vector<std::string> SimpleShellParser<Iterator>::pathnameExpansion(
+    std::vector<std::string> ShellParser<Iterator>::pathnameExpansion(
         const std::string& pattern)
     {
         if (! pathnameExpansionCallback_.empty()) {
@@ -439,4 +438,4 @@ namespace cli { namespace parser
     }
 }}
 
-#endif /* SIMPLE_SHELL_PARSER_HPP_ */
+#endif /* SHELL_PARSER_HPP_ */

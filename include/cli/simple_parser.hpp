@@ -1,8 +1,8 @@
 /*
-* simple_parser.hpp - Parser that only splits the command arguments and
+ * simple_parser.hpp - Parser that only splits the command arguments and
  *                     supports quoted strings
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

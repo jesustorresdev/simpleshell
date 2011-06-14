@@ -20,6 +20,6 @@
 #define PARSERS_HPP_
 
 #include <cli/simple_parser.hpp>
-#include <cli/simple_shell_parser.hpp>
+#include <cli/shell_parser.hpp>
 
 #endif /* PARSERS_HPP_ */
