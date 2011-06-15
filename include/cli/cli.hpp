@@ -1,7 +1,7 @@
 /*
  * cli.hpp - Simple framework for writing line-oriented command interpreters
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 #include <iostream>
 #include <string>
 
-#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/qi.hpp>
 
@@ -47,23 +46,6 @@ namespace cli
 
             typedef Parser<std::string::iterator> ParserType;
             typedef typename ParserType::ReturnType CommandType;
-
-            //
-            // Callback functions types
-            //
-
-            typedef typename callbacks::DoCommandCallback<Type>::Type
-                DoCommandCallback;
-            typedef typename callbacks::EmptyLineCallback<Type>::Type
-                EmptyLineCallback;
-            typedef typename callbacks::PreDoCommandCallback<Type>::Type
-                PreDoCommandCallback;
-            typedef typename callbacks::PostDoCommandCallback<Type>::Type
-                PostDoCommandCallback;
-            typedef typename callbacks::PreLoopCallback<Type>::Type
-                PreLoopCallback;
-            typedef typename callbacks::PostLoopCallback<Type>::Type
-                PostLoopCallback;
 
             //
             // Class constructors
@@ -160,21 +142,15 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
-            //
-            // Callback functions objects
-            //
-
-            boost::function<DoCommandCallback> doCommandCallback_;
-            boost::function<EmptyLineCallback> emptyLineCallback_;
-            boost::function<PreDoCommandCallback> preDoCommandCallback_;
-            boost::function<PostDoCommandCallback> postDoCommandCallback_;
-            boost::function<PreLoopCallback> preLoopCallback_;
-            boost::function<PostLoopCallback> postLoopCallback_;
-
-            template <template <typename> class Callback>
-            template <typename Interpreter, typename Functor>
-            friend void cli::callbacks::SetCallbackImpl<Callback>::
-                setCallback(Interpreter&, Functor);
+            CLI_DECLARE_CALLBACKS(
+                Type,
+                (callback::DoCommandCallback, doCommandCallback_)
+                (callback::EmptyLineCallback, emptyLineCallback_)
+                (callback::PreDoCommandCallback, preDoCommandCallback_)
+                (callback::PostDoCommandCallback, postDoCommandCallback_)
+                (callback::PreLoopCallback, preLoopCallback_)
+                (callback::PostLoopCallback, postLoopCallback_)
+            )
 
             //
             // No-op memory deallocator
@@ -356,7 +332,7 @@ namespace cli
     template <template <typename> class Callback, typename Functor>
     void CommandLineInterpreter<Parser>::setCallback(Functor function)
     {
-        callbacks::SetCallbackImpl<Callback>::setCallback(*this, function);
+        callback::SetCallbackImpl<Callback>::setCallback(*this, function);
     }
 
     template <template <typename> class Parser>

@@ -1,7 +1,7 @@
 /*
  * callbacks.hpp - Framework support of callback functions
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,43 @@
 #include <string>
 #include <vector>
 
+#include <boost/function.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
+
 #include <cli/exceptions.hpp>
 
-namespace cli { namespace callbacks
+//
+// Macro CLI_DECLARE_CALLBACKS
+//
+// Helps to add the support for callbacks to a class declaration.
+//
+
+#define CLI_DECLARE_CALLBACKS_FILLER_0(X, Y)    \
+    ((X, Y)) CLI_DECLARE_CALLBACKS_FILLER_1
+#define CLI_DECLARE_CALLBACKS_FILLER_1(X, Y)    \
+    ((X, Y)) CLI_DECLARE_CALLBACKS_FILLER_0
+#define CLI_DECLARE_CALLBACKS_FILLER_0_END
+#define CLI_DECLARE_CALLBACKS_FILLER_1_END
+
+#define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)             \
+    boost::function<                                                        \
+        typename BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type>  \
+        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);
+
+#define CLI_DECLARE_CALLBACKS(TYPE, DECLARATIONS_SEQ)               \
+    BOOST_PP_SEQ_FOR_EACH(                                          \
+        CLI_DECLARE_CALLBACK_MEMBER,                                \
+        TYPE,                                                       \
+        BOOST_PP_CAT(                                               \
+            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END)) \
+    template <template <typename> class Callback>                   \
+    template <typename T, typename Functor>                         \
+    friend void cli::callback::SetCallbackImpl<Callback>::          \
+        setCallback(T&, Functor);
+
+
+namespace cli { namespace callback
 {
     //
     // Base template for callback function setter implementation
@@ -33,11 +67,11 @@ namespace cli { namespace callbacks
     template <template <typename> class Callback>
     struct SetCallbackImpl
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
         {
             throw cli::exceptions::UnknownCallbackException(
-                Callback<Interpreter>::name());
+                Callback<T>::name());
         }
     };
 
@@ -45,18 +79,18 @@ namespace cli { namespace callbacks
     // DoCommandCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct DoCommandCallback
     {
-        typedef bool (Type)(const typename Interpreter::CommandType&);
+        typedef bool (Type)(const typename T::CommandType&);
         static const char* name() { return "DoCommandCallback"; }
     };
 
     template<>
     struct SetCallbackImpl<DoCommandCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.doCommandCallback_ = function; }
     };
 
@@ -64,7 +98,7 @@ namespace cli { namespace callbacks
     // EmptyLineCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct EmptyLineCallback
     {
         typedef bool (Type)();
@@ -74,8 +108,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<EmptyLineCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.emptyLineCallback_ = function; }
     };
 
@@ -83,7 +117,7 @@ namespace cli { namespace callbacks
     // PreDoCommandCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct PreDoCommandCallback
     {
         typedef void (Type)(std::string&);
@@ -93,8 +127,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<PreDoCommandCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.preDoCommandCallback_ = function; }
     };
 
@@ -102,7 +136,7 @@ namespace cli { namespace callbacks
     // PostDoCommandCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct PostDoCommandCallback
     {
         typedef bool (Type)(bool, const std::string&);
@@ -112,8 +146,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<PostDoCommandCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.postDoCommandCallback_ = function; }
     };
 
@@ -121,7 +155,7 @@ namespace cli { namespace callbacks
     // PreLoopCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct PreLoopCallback
     {
         typedef void (Type)();
@@ -131,8 +165,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<PreLoopCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.preLoopCallback_ = function; }
     };
 
@@ -140,7 +174,7 @@ namespace cli { namespace callbacks
     // PostLoopCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct PostLoopCallback
     {
         typedef void (Type)();
@@ -150,8 +184,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<PostLoopCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.postLoopCallback_ = function; }
     };
 
@@ -159,7 +193,7 @@ namespace cli { namespace callbacks
     // VariableLookupCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct VariableLookupCallback
     {
         typedef std::string (Type)(const std::string&);
@@ -169,8 +203,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<VariableLookupCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.lineParser_->variableLookupCallback_ = function; }
     };
 
@@ -178,7 +212,7 @@ namespace cli { namespace callbacks
     // PathnameExpansionCallback
     //
 
-    template <typename Interpreter>
+    template <typename T>
     struct PathnameExpansionCallback
     {
         typedef std::vector<std::string> (Type)(const std::string&);
@@ -188,8 +222,8 @@ namespace cli { namespace callbacks
     template<>
     struct SetCallbackImpl<PathnameExpansionCallback>
     {
-        template <typename Interpreter, typename Functor>
-        static void setCallback(Interpreter& interpreter, Functor function)
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function)
             { interpreter.lineParser_->PathnameExpansionCallback_ = function; }
     };
 }}

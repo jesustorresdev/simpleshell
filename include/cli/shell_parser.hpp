@@ -29,7 +29,6 @@
 //#define BOOST_SPIRIT_DEBUG
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/function.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
@@ -360,15 +359,6 @@ namespace cli { namespace parser
             qi::locals<bool>, ascii::space_type> expressions;
         qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
 
-        //
-        // Callback functions
-        //
-
-        typedef typename callbacks::VariableLookupCallback<Type>::Type
-            VariableLookupCallback;
-        typedef typename callbacks::PathnameExpansionCallback<Type>::Type
-            PathnameExpansionCallback;
-
         protected:
 
             //
@@ -381,18 +371,11 @@ namespace cli { namespace parser
 
         private:
 
-            //
-            // Callback functions objects
-            //
-
-            boost::function<VariableLookupCallback> variableLookupCallback_;
-            boost::function<PathnameExpansionCallback>
-                pathnameExpansionCallback_;
-
-            template <template <typename> class Callback>
-            template <typename Interpreter, typename Functor>
-            friend void cli::callbacks::SetCallbackImpl<Callback>::
-                setCallback(Interpreter&, Functor);
+            CLI_DECLARE_CALLBACKS(
+                Type,
+                (callback::VariableLookupCallback, variableLookupCallback_)
+                (callback::PathnameExpansionCallback, pathnameExpansionCallback_)
+            )
 
             //
             // Auxiliary methods
