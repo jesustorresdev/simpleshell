@@ -50,8 +50,8 @@ namespace cli { namespace parser
     //
     // Class Command
     //
-    // Stores the information provided by the parser SimpleShellParser
-    // that is required for command execution.
+    // Stores the information provided by the parser ShellParser that is
+    // required for command execution.
     //
 
     struct Command
@@ -126,7 +126,7 @@ namespace cli { namespace parser
 
 //
 // Adaptors from Command classes to Boost.Fusion sequences. They are required
-// by the parser SimpleShellParser. Must be defined at global scope.
+// by the parser ShellParser. Must be defined at global scope.
 //
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -156,7 +156,7 @@ namespace cli { namespace parser
     namespace phoenix = boost::phoenix;
 
     //
-    // Class SimpleShellParser
+    // Class ShellParser
     //
 
     template <typename Iterator>
