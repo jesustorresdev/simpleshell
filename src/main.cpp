@@ -32,18 +32,12 @@ const char PROMPT_TEXT[] = "$ ";
 
 typedef cli::CommandLineInterpreter<cli::parser::ShellParser> InterpreterType;
 
-bool doCommandCallback(const InterpreterType::CommandType& commands)
+bool doCommandCallback(const cli::parser::Command& command)
 {
-    if (! commands.empty()) {
-        std::cout << commands << std::endl;
-        for (InterpreterType::CommandType::const_iterator iter =
-            commands.begin(); iter < commands.end(); ++iter)
-        {
-            if (! iter->arguments.empty()) {
-                if (iter->arguments[0] == "exit") {
-                    return true;
-                }
-            }
+    std::cout << command << std::endl;
+    if (! command.arguments.empty()) {
+        if (command.arguments[0] == "exit") {
+            return true;
         }
     }
     return false;

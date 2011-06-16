@@ -270,15 +270,20 @@ namespace cli
             lastCommand_ = line;
         }
 
-        CommandType command;
         std::string::iterator begin = line.begin();
         std::string::iterator end = line.end();
-        typename ParserType::skipper_type skipperParser;
-        bool success = qi::phrase_parse(begin, end, *lineParser_,
-            skipperParser, command);
-        if (success) {
+        while (begin != end) {
+            CommandType command;
+            typename ParserType::skipper_type skipperParser;
+            bool success = qi::phrase_parse(begin, end, *lineParser_,
+                skipperParser, command);
+            if (! success)
+                break;
+
             bool isFinished = doCommand(command);
-            return postDoCommand(isFinished, line);
+            isFinished = postDoCommand(isFinished, line);
+            if (isFinished)
+                return true;
         }
 
         return false;

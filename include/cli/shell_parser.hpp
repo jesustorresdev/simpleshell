@@ -161,10 +161,10 @@ namespace cli { namespace parser
 
     template <typename Iterator>
     struct ShellParser
-        : qi::grammar<Iterator, std::vector<Command>(), ascii::space_type>
+        : qi::grammar<Iterator, Command(), ascii::space_type>
     {
         typedef ShellParser<Iterator> Type;
-        typedef std::vector<Command> ReturnType;
+        typedef Command ReturnType;
 
         ShellParser() : ShellParser::base_type(start)
         {
@@ -198,9 +198,10 @@ namespace cli { namespace parser
             using phoenix::val;
 
             eol = eoi;
+            neol = !eoi;
             character %= char_;
             dereference = '$';
-            special %= dereference | redirectors | terminators;
+            special %= dereference | redirectors | terminators | pipe;
             escape %= '\\' > character;
 
             name %= char_("a-zA-Z") >> *char_("a-zA-Z0-9");
@@ -244,11 +245,10 @@ namespace cli { namespace parser
 
             assignment %= name >> '=' >> -variableValue;
             redirection %= redirectors >> redirectionArgument;
-            ending %= terminators;
 
             // This statement doesn't work as expected in boost 1.45.0
-            // command %= assignment || +word || +redirection;
-            command = (
+            // start %= assignment || +expandedWord || +redirection;
+            start = (
                 assignment      [at_c<0>(_val) = _1] ||
                 (
                     +expandedWord
@@ -257,16 +257,10 @@ namespace cli { namespace parser
                 ) ||
                 (+redirection)  [at_c<2>(_val) = _1]
             ) >> (
-                ending          [at_c<3>(_val) = _1, _r1 = true ] |
-                eps                                 [_r1 = false]
+                (terminators     [at_c<3>(_val) = _1] >> -eol) |
+                (pipe            [at_c<3>(_val) = _1] > neol) |
+                (eps > eol)
             );
-            expressions = +(
-                command(_a)[push_back(_val, _1)] >>
-                ((eps(!_a) > eol) | eps(_a))
-            ) > eol;
-
-            // start rule with locals doesn't compile in boost 1.44.0
-            start %= expressions;
 
             character.name(translate("character"));
             name.name(translate("name"));
@@ -274,6 +268,7 @@ namespace cli { namespace parser
             variableValue.name(translate("word"));
             unambiguousRedirection.name(translate("unambiguous redirection"));
             eol.name(translate("end-of-line"));
+            neol.name(translate("more characters"));
 
             on_error<fail>(
                 start,
@@ -300,8 +295,7 @@ namespace cli { namespace parser
 //            BOOST_SPIRIT_DEBUG_NODE(assignment);
 //            BOOST_SPIRIT_DEBUG_NODE(redirection);
 //            BOOST_SPIRIT_DEBUG_NODE(ending);
-//            BOOST_SPIRIT_DEBUG_NODE(command);
-            BOOST_SPIRIT_DEBUG_NODE(expressions);
+            BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
         //
@@ -329,12 +323,23 @@ namespace cli { namespace parser
                 add
                     (";", Command::NORMAL)
                     ("&", Command::BACKGROUNDED)
-                    ("|", Command::PIPED)
                 ;
             }
         } terminators;
 
+        struct Pipe
+            : qi::symbols<char, Command::TypeOfTerminator>
+        {
+            Pipe()
+            {
+                add
+                    ("|", Command::PIPED)
+                ;
+            }
+        } pipe;
+
         qi::rule<Iterator> eol;
+        qi::rule<Iterator> neol;
         qi::rule<Iterator, char()> character;
         qi::rule<Iterator, char()> dereference;
         qi::rule<Iterator, char()> special;
@@ -352,12 +357,7 @@ namespace cli { namespace parser
         qi::rule<Iterator, Command::VariableAssignment()> assignment;
         qi::rule<Iterator, Command::StdioRedirection(),
             ascii::space_type> redirection;
-        qi::rule<Iterator, Command::TypeOfTerminator(),
-            ascii::space_type> ending;
-        qi::rule<Iterator, Command(bool&), ascii::space_type> command;
-        qi::rule<Iterator, std::vector<Command>(),
-            qi::locals<bool>, ascii::space_type> expressions;
-        qi::rule<Iterator, std::vector<Command>(), ascii::space_type> start;
+        qi::rule<Iterator, Command(), ascii::space_type> start;
 
         protected:
 
