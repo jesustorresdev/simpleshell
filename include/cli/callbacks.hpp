@@ -23,8 +23,11 @@
 #include <vector>
 
 #include <boost/function.hpp>
+#include <boost/function_types/function_type.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/type_traits.hpp>
 
 #include <cli/exceptions.hpp>
 
@@ -53,9 +56,20 @@
         BOOST_PP_CAT(                                               \
             CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END)) \
     template <template <typename> class Callback>                   \
-    template <typename T, typename Functor>                         \
-    friend void cli::callback::SetCallbackImpl<Callback>::          \
-        setCallback(T&, Functor);
+    friend class cli::callback::SetCallbackImpl;
+
+//
+// Macro CLI_CALLBACK_SIGNATURE_ASSERT
+//
+// Tests if the function signature of FUNCTOR match the expected by CALLBACK.
+//
+
+#define CLI_CALLBACK_SIGNATURE_ASSERT(CALLBACK, FUNCTOR)                \
+    typedef typename CALLBACK<Type>::Type ExpectedSignature;            \
+    typedef typename                                                    \
+        boost::function_types::function_type<FUNCTOR>::type Signature;  \
+    BOOST_STATIC_ASSERT((                                               \
+        boost::is_same<ExpectedSignature, Signature>::value))
 
 
 namespace cli { namespace callback

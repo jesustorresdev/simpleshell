@@ -100,6 +100,9 @@ namespace cli
 
             template <template <typename> class Callback, typename Functor>
             void setCallback(Functor function);
+            template <template <typename> class Callback, typename Functor,
+                typename Argument>
+            void setCallback(Functor function, Argument argument);
 
         protected:
 
@@ -334,18 +337,30 @@ namespace cli
     }
 
     template <template <typename> class Parser>
-    template <template <typename> class Callback, typename Functor>
-    void CommandLineInterpreter<Parser>::setCallback(Functor function)
-    {
-        callback::SetCallbackImpl<Callback>::setCallback(*this, function);
-    }
-
-    template <template <typename> class Parser>
     void CommandLineInterpreter<Parser>::setHistoryFile(
         const std::string& fileName)
     {
         readLine_.clearHistory();
         readLine_.setHistoryFile(fileName);
+    }
+
+    template <template <typename> class Parser>
+    template <template <typename> class Callback, typename Functor>
+    void CommandLineInterpreter<Parser>::setCallback(Functor function)
+    {
+        CLI_CALLBACK_SIGNATURE_ASSERT(Callback, Functor);
+        callback::SetCallbackImpl<Callback>::setCallback(*this, function);
+    }
+
+    template <template <typename> class Parser>
+    template <template <typename> class Callback, typename Functor,
+        typename Argument>
+    void CommandLineInterpreter<Parser>::setCallback(Functor function,
+        Argument argument)
+    {
+        CLI_CALLBACK_SIGNATURE_ASSERT(Callback, Functor);
+        callback::SetCallbackImpl<Callback>::setCallback(*this, function,
+            argument);
     }
 }
 
