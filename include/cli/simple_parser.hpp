@@ -33,7 +33,9 @@
 #include <boost/spirit/home/phoenix/operator/if_else.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-namespace cli { namespace parsers
+#include <cli/boost_parser_base.hpp>
+
+namespace cli { namespace parser
 {
     namespace qi = boost::spirit::qi;
     namespace ascii = boost::spirit::ascii;
@@ -43,12 +45,11 @@ namespace cli { namespace parsers
     // Class SimpleParser
     //
 
-    template<typename Iterator>
+    template <typename Iterator>
     struct SimpleParser
-        : qi::grammar<Iterator, std::vector<std::string>(), ascii::space_type>
+        : BoostParserBase<Iterator, std::vector<std::string>(), ascii::space_type>
     {
         typedef SimpleParser<Iterator> Type;
-        typedef std::vector<std::string> ReturnType;
 
         SimpleParser() : SimpleParser::base_type(start)
         {

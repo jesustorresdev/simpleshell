@@ -23,7 +23,6 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/spirit/include/qi.hpp>
 
 #include <cli/callbacks.hpp>
 #include <cli/internals.hpp>
@@ -31,9 +30,6 @@
 
 namespace cli
 {
-    namespace qi = boost::spirit::qi;
-    namespace ascii = boost::spirit::ascii;
-
     //
     // Class CommandLineInterpreter
     //
@@ -277,9 +273,7 @@ namespace cli
         std::string::iterator end = line.end();
         while (begin != end) {
             CommandType command;
-            typename ParserType::skipper_type skipperParser;
-            bool success = qi::phrase_parse(begin, end, *lineParser_,
-                skipperParser, command);
+            bool success = (*lineParser_)(begin, end, command);
             if (! success)
                 break;
 

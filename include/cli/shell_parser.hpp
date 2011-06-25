@@ -20,6 +20,7 @@
 #define SHELL_PARSER_HPP_
 
 #include <cerrno>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
+#include <cli/boost_parser_base.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
 
@@ -161,10 +163,9 @@ namespace cli { namespace parser
 
     template <typename Iterator>
     struct ShellParser
-        : qi::grammar<Iterator, Command(), ascii::space_type>
+        : BoostParserBase<Iterator, Command(), ascii::space_type>
     {
         typedef ShellParser<Iterator> Type;
-        typedef Command ReturnType;
 
         ShellParser() : ShellParser::base_type(start)
         {
