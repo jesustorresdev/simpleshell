@@ -106,7 +106,7 @@ namespace cli
             // Hook methods invoked for command execution
             //
 
-            virtual bool doCommand(const CommandType& command);
+            virtual bool doCommand(CommandType const& command);
             virtual bool emptyLine();
 
             //
@@ -288,7 +288,7 @@ namespace cli
 
     template <template <typename> class Parser>
     bool CommandLineInterpreter<Parser>::doCommand(
-        const CommandType& command)
+        CommandType const& command)
     {
         return doCommandCallback_.empty() ?
             false : doCommandCallback_(command);

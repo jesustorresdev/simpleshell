@@ -96,7 +96,7 @@ namespace cli { namespace callback
     template <typename T>
     struct DoCommandCallback
     {
-        typedef bool (Type)(const typename T::CommandType&);
+        typedef bool (Type)(typename T::CommandType const&);
         static const char* name() { return "DoCommandCallback"; }
     };
 
