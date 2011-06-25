@@ -20,7 +20,8 @@
 #ifndef SIMPLE_PARSER_HPP_
 #define SIMPLE_PARSER_HPP_
 
-#include <ostream>
+#include <cerrno>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@
 
 #include <boost/spirit/home/phoenix/object/construct.hpp>
 #include <boost/spirit/home/phoenix/operator/if_else.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/boost_parser_base.hpp>
@@ -80,6 +82,8 @@ namespace cli { namespace parser
             on_error<fail>(
                 start,
                 std::cerr
+                    << val(::program_invocation_short_name)
+                    << val(": ")
                     << val(translate("parse error, expecting"))
                     << val(" ")
                     << _4
