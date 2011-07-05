@@ -16,41 +16,43 @@
  * limitations under the License.
  */
 
-#include <ostream>
-#include <vector>
+#include <iostream>
+#include <string>
 
-#include <cli/auxiliary.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/cli.hpp>
-#include <cli/shell_parser.hpp>
+#include <cli/parsers.hpp>
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
-                          "Copyright 2010 Jesús Torres <jmtorres@ull.es>\n";
+                          "Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>\n";
 
 const char PROMPT_TEXT[] = "$ ";
 
-typedef cli::CommandLineInterpreter<cli::parser::ShellParser> InterpreterType;
-
-bool doCommandCallback(const cli::parser::Command& command)
+bool defaultCommandCallback(const std::string& command,
+    const cli::parser::shellparser::CommandDetails& details)
 {
-    std::cout << command << std::endl;
-    if (! command.arguments.empty()) {
-        if (command.arguments[0] == "exit") {
-            return true;
-        }
-    }
+    std::cout << command << ": ";
+    std::cout << details << std::endl;
     return false;
+}
+
+bool exitCommandCallback(const std::string& command,
+    const cli::parser::shellparser::CommandDetails& details)
+{
+    return true;
 }
 
 int main(int argc, char** argv)
 {
-    InterpreterType interpreter;
+    cli::CommandLineInterpreter<cli::parser::ShellParser> interpreter;
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);
 
     interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &doCommandCallback);
+        &defaultCommandCallback);
+    interpreter.setCallback<cli::callback::DoCommandCallback>(
+        &exitCommandCallback, "exit");
 
     interpreter.loop();
 

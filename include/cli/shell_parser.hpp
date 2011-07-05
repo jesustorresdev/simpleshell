@@ -32,85 +32,87 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_function.hpp>
-#include <boost/spirit/home/phoenix/object/construct.hpp>
-#include <boost/spirit/home/phoenix/operator/comparison.hpp>
-#include <boost/spirit/home/phoenix/operator/if_else.hpp>
-#include <boost/spirit/home/phoenix/statement/sequence.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/include/qi.hpp>
 
+#include <cli/auxiliary.hpp>
 #include <cli/boost_parser_base.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
 
-namespace cli { namespace parser
+namespace cli { namespace parser { namespace shellparser
 {
     //
-    // Class Command
+    // Class CommandDetails
     //
-    // Stores the information provided by the parser ShellParser that is
-    // required for command execution.
+    // Stores the information provided by the parser ShellParser about the
+    // command specified.
     //
 
-    struct Command
+    struct VariableAssignment
     {
-        Command() : terminator(NORMAL){}
+        std::string name;
+        std::string value;
+    };
 
-        struct VariableAssignment
+    struct StdioRedirection
+    {
+        enum TypeOfRedirection
         {
-            std::string name;
-            std::string value;
+            TRUNCATED_INPUT,    // command <filename
+            TRUNCATED_OUTPUT,   // command >filename
+            APPENDED_OUTPUT     // command >>filename
         };
 
-        struct StdioRedirection
-        {
-            enum TypeOfRedirection
-            {
-                TRUNCATED_INPUT,    // command <filename
-                TRUNCATED_OUTPUT,   // command >filename
-                APPENDED_OUTPUT     // command >>filename
-            };
+        TypeOfRedirection type;
+        std::string argument;
+    };
 
-            TypeOfRedirection type;
-            std::string argument;
-        };
-
+    struct CommandDetails
+    {
         enum TypeOfTerminator
         {
-            NORMAL,                 // command ;
-            BACKGROUNDED,           // command &
-            PIPED                   // command1 | command2
+            NORMAL,             // command ;
+            BACKGROUNDED,       // command &
+            PIPED               // command1 | command2
         };
 
         VariableAssignment variable;
         std::vector<std::string> arguments;
         std::vector<StdioRedirection> redirections;
         TypeOfTerminator terminator;
+
+        CommandDetails() : terminator(NORMAL) {}
+
+        std::string getCommandName() const
+            { return arguments.empty() ? std::string() : arguments[0]; }
     };
 
     //
-    // Overload of insertion operator (<<) for struct Command
-    // It is required to debug the parser rules
+    // Overload insertion operator (<<) for struct CommandDetails.
+    // It is required to debug the parser rules.
     //
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& out, const Command& command)
+    operator<<(std::basic_ostream<CharT, Traits>& out,
+        const CommandDetails& details)
     {
-        return out << "{variable: "     << command.variable
-                  << ", arguments: "    << command.arguments
-                  << ", redirections: " << command.redirections
-                  << ", terminator: "   << command.terminator << '}';
+        return out << "{variable: "     << details.variable
+                  << ", arguments: "    << details.arguments
+                  << ", redirections: " << details.redirections
+                  << ", terminator: "   << details.terminator << '}';
     }
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& out,
-        const Command::StdioRedirection& redirection)
+        const StdioRedirection& redirection)
     {
         return out << "{type: "     << redirection.type
                   << ", argument: " << redirection.argument << '}';
@@ -119,39 +121,39 @@ namespace cli { namespace parser
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& out,
-        const Command::VariableAssignment& variable)
+        const VariableAssignment& variable)
     {
         return out << "{name: "  << variable.name
                   << ", value: " << variable.value << '}';
     }
-}}
+}}}
 
 //
-// Adaptors from Command classes to Boost.Fusion sequences. They are required
-// by the parser ShellParser. Must be defined at global scope.
+// Adaptors from CommandDetails classes to Boost.Fusion sequences. They are
+// required by the parser ShellParser. Must be defined at global scope.
 //
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::Command::VariableAssignment,
+    cli::parser::shellparser::VariableAssignment,
     (std::string, name)
     (std::string, value)
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::Command::StdioRedirection,
-    (cli::parser::Command::StdioRedirection::TypeOfRedirection, type)
+    cli::parser::shellparser::StdioRedirection,
+    (cli::parser::shellparser::StdioRedirection::TypeOfRedirection, type)
     (std::string, argument)
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::Command,
-    (cli::parser::Command::VariableAssignment, variable)
+    cli::parser::shellparser::CommandDetails,
+    (cli::parser::shellparser::VariableAssignment, variable)
     (std::vector<std::string>, arguments)
-    (std::vector<cli::parser::Command::StdioRedirection>, redirections)
-    (cli::parser::Command::TypeOfTerminator, terminator)
+    (std::vector<cli::parser::shellparser::StdioRedirection>, redirections)
+    (cli::parser::shellparser::CommandDetails::TypeOfTerminator, terminator)
 )
 
-namespace cli { namespace parser
+namespace cli { namespace parser { namespace shellparser
 {
     namespace qi = boost::spirit::qi;
     namespace ascii = boost::spirit::ascii;
@@ -163,9 +165,10 @@ namespace cli { namespace parser
 
     template <typename Iterator>
     struct ShellParser
-        : BoostParserBase<Iterator, Command(), ascii::space_type>
+        : BoostParserBase<Iterator, CommandDetails, ascii::space_type>
     {
         typedef ShellParser<Iterator> Type;
+        typedef typename Type::sig_type sig_type;
 
         ShellParser() : ShellParser::base_type(start)
         {
@@ -190,8 +193,8 @@ namespace cli { namespace parser
             using phoenix::begin;
             using phoenix::bind;
             using phoenix::construct;
-            using phoenix::end;
             using phoenix::empty;
+            using phoenix::end;
             using phoenix::if_else;
             using phoenix::insert;
             using phoenix::push_back;
@@ -247,9 +250,7 @@ namespace cli { namespace parser
             assignment %= name >> '=' >> -variableValue;
             redirection %= redirectors >> redirectionArgument;
 
-            // This statement doesn't work as expected in boost 1.45.0
-            // start %= assignment || +expandedWord || +redirection;
-            start = (
+            command = (
                 assignment      [at_c<0>(_val) = _1] ||
                 (
                     +expandedWord
@@ -258,10 +259,15 @@ namespace cli { namespace parser
                 ) ||
                 (+redirection)  [at_c<2>(_val) = _1]
             ) >> (
-                (terminators     [at_c<3>(_val) = _1] >> -eol) |
-                (pipe            [at_c<3>(_val) = _1] > neol) |
+                (terminators    [at_c<3>(_val) = _1] >> -eol) |
+                (pipe           [at_c<3>(_val) = _1] >  neol) |
                 (eps > eol)
             );
+            start = command [
+                 at_c<1>(_val) = _1,
+                 at_c<0>(_val) =
+                     bind(&CommandDetails::getCommandName, _1)
+            ];
 
             character.name(translate("character"));
             name.name(translate("name"));
@@ -296,6 +302,7 @@ namespace cli { namespace parser
 //            BOOST_SPIRIT_DEBUG_NODE(assignment);
 //            BOOST_SPIRIT_DEBUG_NODE(redirection);
 //            BOOST_SPIRIT_DEBUG_NODE(ending);
+//            BOOST_SPIRIT_DEBUG_NODE(command);
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
@@ -304,37 +311,37 @@ namespace cli { namespace parser
         //
 
         struct Redirections
-            : qi::symbols<char, Command::StdioRedirection::TypeOfRedirection>
+            : qi::symbols<char, StdioRedirection::TypeOfRedirection>
         {
             Redirections()
             {
                 add
-                    ("<",  Command::StdioRedirection::TRUNCATED_INPUT)
-                    (">",  Command::StdioRedirection::TRUNCATED_OUTPUT)
-                    (">>", Command::StdioRedirection::APPENDED_OUTPUT)
+                    ("<",  StdioRedirection::TRUNCATED_INPUT)
+                    (">",  StdioRedirection::TRUNCATED_OUTPUT)
+                    (">>", StdioRedirection::APPENDED_OUTPUT)
                 ;
             }
         } redirectors;
 
         struct Terminators
-            : qi::symbols<char, Command::TypeOfTerminator>
+            : qi::symbols<char, CommandDetails::TypeOfTerminator>
         {
             Terminators()
             {
                 add
-                    (";", Command::NORMAL)
-                    ("&", Command::BACKGROUNDED)
+                    (";", CommandDetails::NORMAL)
+                    ("&", CommandDetails::BACKGROUNDED)
                 ;
             }
         } terminators;
 
         struct Pipe
-            : qi::symbols<char, Command::TypeOfTerminator>
+            : qi::symbols<char, CommandDetails::TypeOfTerminator>
         {
             Pipe()
             {
                 add
-                    ("|", Command::PIPED)
+                    ("|", CommandDetails::PIPED)
                 ;
             }
         } pipe;
@@ -355,10 +362,10 @@ namespace cli { namespace parser
         qi::rule<Iterator, void(bool)> unambiguousRedirection;
         qi::rule<Iterator, std::string(),
             qi::locals<int> > redirectionArgument;
-        qi::rule<Iterator, Command::VariableAssignment()> assignment;
-        qi::rule<Iterator, Command::StdioRedirection(),
-            ascii::space_type> redirection;
-        qi::rule<Iterator, Command(), ascii::space_type> start;
+        qi::rule<Iterator, VariableAssignment()> assignment;
+        qi::rule<Iterator, StdioRedirection(), ascii::space_type> redirection;
+        qi::rule<Iterator, CommandDetails(), ascii::space_type> command;
+        qi::rule<Iterator, sig_type, ascii::space_type> start;
 
         protected:
 
@@ -374,8 +381,8 @@ namespace cli { namespace parser
 
             CLI_DECLARE_CALLBACKS(
                 Type,
-                (callback::VariableLookupCallback, variableLookupCallback_)
-                (callback::PathnameExpansionCallback, pathnameExpansionCallback_)
+                (VariableLookupCallback, variableLookupCallback_)
+                (PathnameExpansionCallback, pathnameExpansionCallback_)
             )
 
             //
@@ -425,6 +432,11 @@ namespace cli { namespace parser
 
         return glob;
     }
+}}}
+
+namespace cli { namespace parser
+{
+    using shellparser::ShellParser;
 }}
 
 #endif /* SHELL_PARSER_HPP_ */

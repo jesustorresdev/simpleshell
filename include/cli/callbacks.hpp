@@ -44,9 +44,11 @@
 #define CLI_DECLARE_CALLBACKS_FILLER_0_END
 #define CLI_DECLARE_CALLBACKS_FILLER_1_END
 
-#define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)             \
-    boost::function<                                                        \
-        typename BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type>  \
+#define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)     \
+    typedef typename cli::callback::                                \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type    \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);               \
+    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>   \
         BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);
 
 #define CLI_DECLARE_CALLBACKS(TYPE, DECLARATIONS_SEQ)               \
@@ -96,7 +98,8 @@ namespace cli { namespace callback
     template <typename T>
     struct DoCommandCallback
     {
-        typedef bool (Type)(typename T::CommandType const&);
+        typedef bool (Type)(const std::string&,
+            typename T::CommandDetailsType const&);
         static const char* name() { return "DoCommandCallback"; }
     };
 
@@ -105,7 +108,11 @@ namespace cli { namespace callback
     {
         template <typename T, typename Functor>
         static void setCallback(T& interpreter, Functor function)
-            { interpreter.doCommandCallback_ = function; }
+            { interpreter.defaultDoCommandCallback_ = function; }
+        template <typename T, typename Functor>
+        static void setCallback(T& interpreter, Functor function,
+            const std::string& command)
+            { interpreter.doCommandCallbacks_[command] = function; }
     };
 
     //

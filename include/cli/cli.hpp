@@ -20,6 +20,7 @@
 #define CLI_HPP_
 
 #include <iostream>
+#include <map>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -41,7 +42,7 @@ namespace cli
             typedef CommandLineInterpreter<Parser> Type;
 
             typedef Parser<std::string::iterator> ParserType;
-            typedef typename ParserType::ReturnType CommandType;
+            typedef typename ParserType::CommandDetailsType CommandDetailsType;
 
             //
             // Class constructors
@@ -106,7 +107,8 @@ namespace cli
             // Hook methods invoked for command execution
             //
 
-            virtual bool doCommand(CommandType const& command);
+            virtual bool doCommand(const std::string& command,
+                CommandDetailsType const& details);
             virtual bool emptyLine();
 
             //
@@ -141,15 +143,23 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
+            //
+            // Callback function objects
+            //
+
             CLI_DECLARE_CALLBACKS(
                 Type,
-                (callback::DoCommandCallback, doCommandCallback_)
-                (callback::EmptyLineCallback, emptyLineCallback_)
-                (callback::PreDoCommandCallback, preDoCommandCallback_)
-                (callback::PostDoCommandCallback, postDoCommandCallback_)
-                (callback::PreLoopCallback, preLoopCallback_)
-                (callback::PostLoopCallback, postLoopCallback_)
+                (DoCommandCallback, defaultDoCommandCallback_)
+                (EmptyLineCallback, emptyLineCallback_)
+                (PreDoCommandCallback, preDoCommandCallback_)
+                (PostDoCommandCallback, postDoCommandCallback_)
+                (PreLoopCallback, preLoopCallback_)
+                (PostLoopCallback, postLoopCallback_)
             )
+
+            typedef std::map<std::string,
+                boost::function<DoCommandCallback> > DoCommandCallbacks;
+            DoCommandCallbacks doCommandCallbacks_;
 
             //
             // No-op memory deallocator
@@ -272,12 +282,13 @@ namespace cli
         std::string::iterator begin = line.begin();
         std::string::iterator end = line.end();
         while (begin != end) {
-            CommandType command;
-            bool success = (*lineParser_)(begin, end, command);
+            std::string command;
+            CommandDetailsType details;
+            bool success = (*lineParser_)(begin, end, command, details);
             if (! success)
                 break;
 
-            bool isFinished = doCommand(command);
+            bool isFinished = doCommand(command, details);
             isFinished = postDoCommand(isFinished, line);
             if (isFinished)
                 return true;
@@ -287,11 +298,18 @@ namespace cli
     }
 
     template <template <typename> class Parser>
-    bool CommandLineInterpreter<Parser>::doCommand(
-        CommandType const& command)
+    bool CommandLineInterpreter<Parser>::doCommand(const std::string& command,
+        CommandDetailsType const& details)
     {
-        return doCommandCallback_.empty() ?
-            false : doCommandCallback_(command);
+        typename DoCommandCallbacks::const_iterator it;
+        it = doCommandCallbacks_.find(command);
+        if (it == doCommandCallbacks_.end()) {
+            return defaultDoCommandCallback_.empty() ?
+                false : defaultDoCommandCallback_(command, details);
+        }
+        else {
+            return it->second(command, details);
+        }
     }
 
     template <template <typename> class Parser>

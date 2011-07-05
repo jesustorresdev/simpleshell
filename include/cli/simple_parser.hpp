@@ -30,18 +30,21 @@
 
 //#define BOOST_SPIRIT_DEBUG
 
-#include <boost/spirit/home/phoenix/object/construct.hpp>
-#include <boost/spirit/home/phoenix/operator/if_else.hpp>
+#include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/boost_parser_base.hpp>
 
-namespace cli { namespace parser
+namespace cli { namespace parser { namespace simpleparser
 {
     namespace qi = boost::spirit::qi;
     namespace ascii = boost::spirit::ascii;
     namespace phoenix = boost::phoenix;
+
+    typedef std::vector<std::string> CommandDetails;
 
     //
     // Class SimpleParser
@@ -49,21 +52,26 @@ namespace cli { namespace parser
 
     template <typename Iterator>
     struct SimpleParser
-        : BoostParserBase<Iterator, std::vector<std::string>(), ascii::space_type>
+        : BoostParserBase<Iterator, CommandDetails, ascii::space_type>
     {
         typedef SimpleParser<Iterator> Type;
+        typedef typename Type::sig_type sig_type;
 
         SimpleParser() : SimpleParser::base_type(start)
         {
+            using qi::_1;
             using qi::_2;
             using qi::_3;
             using qi::_4;
+            using qi::_val;
             using qi::eoi;
             using qi::fail;
             using qi::lexeme;
             using qi::on_error;
             using ascii::char_;
             using ascii::space;
+            using phoenix::at;
+            using phoenix::at_c;
             using phoenix::construct;
             using phoenix::val;
 
@@ -74,7 +82,8 @@ namespace cli { namespace parser
             quotedString %= lexeme['\'' >> *(char_ - '\'') > '\''];
             doubleQuotedString %= lexeme['"' >> *(char_ - '"') > '"'];
             argument %= quotedString | doubleQuotedString | word;
-            start = +argument > eol;
+            start = (+argument) [at_c<1>(_val) = _1,
+                                 at_c<0>(_val) = at(_1, 0)] > eol;
 
             character.name(translate("character"));
             eol.name(translate("end-of-line"));
@@ -109,8 +118,13 @@ namespace cli { namespace parser
         qi::rule<Iterator, std::string(), ascii::space_type> quotedString;
         qi::rule<Iterator, std::string(), ascii::space_type> doubleQuotedString;
         qi::rule<Iterator, std::string(), ascii::space_type> argument;
-        qi::rule<Iterator, std::vector<std::string>(), ascii::space_type> start;
+        qi::rule<Iterator, sig_type, ascii::space_type> start;
     };
+}}}
+
+namespace cli { namespace parser
+{
+    using simpleparser::SimpleParser;
 }}
 
 #endif /* SIMPLE_PARSER_HPP_ */
