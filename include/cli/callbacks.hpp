@@ -24,9 +24,9 @@
 
 #include <boost/function.hpp>
 #include <boost/function_types/function_type.hpp>
+#include <boost/mpl/assert.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 
 #include <cli/exceptions.hpp>
@@ -70,8 +70,7 @@
     typedef typename CALLBACK<Type>::Type ExpectedSignature;            \
     typedef typename                                                    \
         boost::function_types::function_type<FUNCTOR>::type Signature;  \
-    BOOST_STATIC_ASSERT((                                               \
-        boost::is_same<ExpectedSignature, Signature>::value))
+    BOOST_MPL_ASSERT((boost::is_same<ExpectedSignature, Signature>))
 
 
 namespace cli { namespace callback
