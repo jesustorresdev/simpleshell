@@ -20,8 +20,9 @@
 #include <utility>
 #include <vector>
 
-#include <boost/system/error_code.hpp>
 #include <boost/thread/tss.hpp>
+
+#include <cli/internals.hpp>
 
 namespace glob {
     // onGlobError() must be declared before declaring Glob class
@@ -49,7 +50,7 @@ namespace glob
     extern "C" int onGlobError(const char *epath, int eerrno)
     {
         return currentGlobObject->onError(epath,
-            system::error_code(eerrno, system::system_category()));
+            std::error_code(eerrno, std::system_category()));
     }
 
     //
@@ -75,7 +76,7 @@ namespace glob
     }
 
     bool Glob::onError(const std::string& pathName,
-        system::error_code errorCode)
+        std::error_code errorCode)
     {
         errors_.push_back(std::make_pair(pathName, errorCode));
         return false;

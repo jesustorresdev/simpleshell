@@ -23,8 +23,9 @@
 #include <utility>
 #include <vector>
 
-#include <boost/system/error_code.hpp>
 #include <boost/filesystem.hpp>
+
+#include <cli/internals.hpp>
 
 namespace glob
 {
@@ -43,7 +44,7 @@ namespace glob
         public:
 
             typedef std::vector<std::pair<
-                std::string, system::error_code> > ErrorsType;
+                std::string, std::error_code> > ErrorsType;
 
             enum GlobFlags
             {
@@ -89,7 +90,7 @@ namespace glob
              ErrorsType errors_;
 
              virtual bool onError(const std::string& pathName,
-                 system::error_code errorCode);
+                 std::error_code errorCode);
 
         private:
              std::vector<std::string> pathNames_;

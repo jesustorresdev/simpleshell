@@ -18,9 +18,8 @@
 
 #include <string>
 
-#include <boost/system/error_code.hpp>
-
 #include <cli/dl.hpp>
+#include <cli/internals.hpp>
 
 namespace dl
 {
@@ -37,14 +36,14 @@ namespace dl
     namespace loader_error
     {
 
-        system::error_code make_error_code(LoaderError e)
+        std::error_code make_error_code(LoaderError e)
         {
-            return system::error_code(static_cast<int>(e), loaderCategory());
+            return std::error_code(static_cast<int>(e), loaderCategory());
         }
 
-        system::error_condition make_error_condition(LoaderError e)
+        std::error_condition make_error_condition(LoaderError e)
         {
-            return system::error_condition(static_cast<int>(e),
+            return std::error_condition(static_cast<int>(e),
                 loaderCategory());
         }
     }
@@ -70,20 +69,20 @@ namespace dl
         }
     }
 
-    system::error_condition
+    std::error_condition
     LoaderCategory::default_error_condition(int ev) const
     {
         switch (ev) {
         case loader_error::LIBRARY_LOAD_FAILED:
-            return system::errc::permission_denied;
+            return std::errc::permission_denied;
         case loader_error::SYMBOL_RESOLUTION_FAILED:
-            return system::errc::address_not_available;
+            return std::errc::address_not_available;
         default:
-            return system::error_condition(ev, *this);
+            return std::error_condition(ev, *this);
         }
     }
 
-    system::error_category& loaderCategory()
+    std::error_category& loaderCategory()
     {
         static LoaderCategory instance;
         return instance;

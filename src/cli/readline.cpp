@@ -21,8 +21,6 @@
 #include <iostream>
 #include <string>
 
-#include <boost/system/error_code.hpp>
-
 #include <cli/internals.hpp>
 #include <cli/readline.hpp>
 
@@ -44,37 +42,37 @@ namespace cli { namespace readline
     {
         if (isOpen()) {
             readline_ = getFunction<char* (const char*)>("readline");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             add_history_ = getFunction<void (const char*)>("add_history");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             read_history_ = getFunction<int (const char*)>("read_history");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             write_history_ = getFunction<int (const char*)>("write_history");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             clear_history_ = getFunction<void ()>("clear_history");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             rl_instream_ = getVariable<FILE*>("rl_instream");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
 
             rl_outstream_ = getVariable<FILE*>("rl_outstream");
-            if (getLastError() != system::errc::success) {
+            if (getLastError() != std::errc::success) {
                 return;
             }
         }
@@ -96,27 +94,27 @@ namespace cli { namespace readline
     {
         const char* c_fileName = fileName.empty() ? NULL : fileName.c_str();
         int errorNo = read_history_(c_fileName);
-        errorCode_ = system::error_code(errorNo, system::system_category());
+        errorCode_ = std::error_code(errorNo, std::system_category());
     }
 
     void ReadlineLibrary::writeHistory(const std::string& fileName)
     {
         const char* c_fileName = fileName.empty() ? NULL : fileName.c_str();
         int errorNo = write_history_(c_fileName);
-        errorCode_ = system::error_code(errorNo, system::system_category());
+        errorCode_ = std::error_code(errorNo, std::system_category());
     }
 
     void ReadlineLibrary::setInStream(std::istream& in)
     {
         int fd_in = ::fileno(in);
         if (fd_in == -1) {
-            errorCode_ = system::error_code(errno, system::system_category());
+            errorCode_ = std::error_code(errno, std::system_category());
             return;
         }
 
         FILE* file_in = ::fdopen(fd_in, "r");
         if (file_in == NULL) {
-            errorCode_ = system::error_code(errno, system::system_category());
+            errorCode_ = std::error_code(errno, std::system_category());
             return;
         }
 
@@ -128,13 +126,13 @@ namespace cli { namespace readline
     {
         int fd_out = ::fileno(out);
         if (fd_out == -1) {
-            errorCode_ = system::error_code(errno, system::system_category());
+            errorCode_ = std::error_code(errno, std::system_category());
             return;
         }
 
         FILE* file_out = ::fdopen(fd_out, "w");
         if (file_out == NULL) {
-            errorCode_ = system::error_code(errno, system::system_category());
+            errorCode_ = std::error_code(errno, std::system_category());
             return;
         }
 
@@ -163,7 +161,7 @@ namespace cli { namespace readline
     void Readline::init()
     {
         if (readlineLibrary_ &&
-            (readlineLibrary_->getLastError() != system::errc::success)) {
+            (readlineLibrary_->getLastError() != std::errc::success)) {
             readlineLibrary_.reset();
         }
         else if (! internals::isStreamTty(in_) ||
@@ -174,13 +172,13 @@ namespace cli { namespace readline
         // Set the input and output streams for readline library
         if (readlineLibrary_) {
             readlineLibrary_->setInStream(in_);
-            if (readlineLibrary_->getLastError() != system::errc::success) {
+            if (readlineLibrary_->getLastError() != std::errc::success) {
                 readlineLibrary_.reset();
             }
         }
         if (readlineLibrary_) {
             readlineLibrary_->setOutStream(out_);
-            if (readlineLibrary_->getLastError() != system::errc::success) {
+            if (readlineLibrary_->getLastError() != std::errc::success) {
                 readlineLibrary_.reset();
             }
         }

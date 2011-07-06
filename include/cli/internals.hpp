@@ -22,6 +22,10 @@
 #include <iostream>
 #include <string>
 
+#include <boost/system/error_code.hpp>
+
+#define translate(str) str  // TODO: Use Boost.Locale when available
+
 namespace cli { namespace internals
 {
 
@@ -29,5 +33,10 @@ namespace cli { namespace internals
     bool isStreamTty(const std::ios& stream);
 
 }}
+
+namespace std
+{
+    using namespace boost::system;
+}
 
 #endif /* INTERALS_HPP_ */

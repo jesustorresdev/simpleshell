@@ -24,9 +24,6 @@
 #include <string>
 #include <vector>
 
-#include <libintl.h>    // TODO: To use Boost.Locale when available
-#define translate(str) ::gettext(str)
-
 //#define BOOST_SPIRIT_DEBUG
 
 #include <boost/algorithm/string/join.hpp>
@@ -44,6 +41,7 @@
 #include <cli/boost_parser_base.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
+#include <cli/internals.hpp>
 
 namespace cli { namespace parser { namespace shellparser
 {

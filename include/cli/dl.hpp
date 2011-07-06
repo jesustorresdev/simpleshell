@@ -19,11 +19,13 @@
 #ifndef DL_HPP_
 #define DL_HPP_
 
+#include <climits>
 #include <string>
 
 #include <boost/function.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/type_traits/add_pointer.hpp>
+
+#include <cli/internals.hpp>
 
 namespace dl
 {
@@ -45,18 +47,18 @@ namespace dl
             SYMBOL_RESOLUTION_FAILED
         };
 
-        system::error_code make_error_code(LoaderError e);
-        system::error_condition make_error_condition(LoaderError e);
+        std::error_code make_error_code(LoaderError e);
+        std::error_condition make_error_condition(LoaderError e);
     }
 
-    class LoaderCategory : public system::error_category
+    class LoaderCategory : public std::error_category
     {
         virtual const char* name() const;
         virtual std::string message(int ev) const;
-        virtual system::error_condition default_error_condition(int ev) const;
+        virtual std::error_condition default_error_condition(int ev) const;
     };
 
-    system::error_category& loaderCategory();
+    std::error_category& loaderCategory();
 
     //
     // Class DynamicLibrary
@@ -71,10 +73,16 @@ namespace dl
                 LAZY_BINDING        = RTLD_LAZY,
                 ONLOAD_BINDING      = RTLD_NOW,
                 GLOBAL_BINDING      = RTLD_GLOBAL,
-                LOCAL_BINDING       = RTLD_LOCAL,
-                NOUNLOAD_ONCLOSE    = RTLD_NODELETE,
-                NOLOAD_ONOPEN       = RTLD_NOLOAD,
-                DEEP_BINDING        = RTLD_DEEPBIND
+                LOCAL_BINDING       = RTLD_LOCAL
+#if defined(__GLIBC__)
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)
+               ,NOUNLOAD_ONCLOSE    = RTLD_NODELETE,
+                NOLOAD_ONOPEN       = RTLD_NOLOAD
+#endif
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 3)
+               ,DEEP_BINDING        = RTLD_DEEPBIND
+#endif
+#endif /* __GLIBC__ */
             };
 
             DynamicLibrary(const std::string& fileName = std::string(),
@@ -120,7 +128,7 @@ namespace dl
 
             bool isOpen() const { return libraryHandle_ != NULL; }
 
-            system::error_code getLastError() const
+            std::error_code getLastError() const
                 { return errorCode_; }
 
             const std::string getLastErrorMessage() const
@@ -142,7 +150,7 @@ namespace dl
             static std::string dlerror();
 
         protected:
-            system::error_code errorCode_;
+            std::error_code errorCode_;
 
         private:
             void* libraryHandle_;
