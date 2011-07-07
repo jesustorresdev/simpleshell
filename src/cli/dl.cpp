@@ -60,8 +60,12 @@ namespace dl
     std::string LoaderCategory::message(int ev) const
     {
         switch (ev) {
+        case loader_error::LIBRARY_ALREADY_LOADED:
+            return "A dynamic library is already loaded";
         case loader_error::LIBRARY_LOAD_FAILED:
             return "Failed to load dynamic library";
+        case loader_error::LIBRARY_NOT_LOADED:
+            return "No loaded dynamic library";
         case loader_error::SYMBOL_RESOLUTION_FAILED:
             return "Failed to resolve symbol";
         default:
@@ -73,8 +77,12 @@ namespace dl
     LoaderCategory::default_error_condition(int ev) const
     {
         switch (ev) {
+        case loader_error::LIBRARY_ALREADY_LOADED:
+            return std::errc::address_in_use;
         case loader_error::LIBRARY_LOAD_FAILED:
             return std::errc::permission_denied;
+        case loader_error::LIBRARY_NOT_LOADED:
+            return std::errc::address_not_available;
         case loader_error::SYMBOL_RESOLUTION_FAILED:
             return std::errc::address_not_available;
         default:
@@ -92,25 +100,45 @@ namespace dl
     // Class DynamicLibrary
     //
 
-    DynamicLibrary::DynamicLibrary(const std::string& fileName,
-        OpenFlags flags)
+    DynamicLibrary::DynamicLibrary() : libraryHandle_(NULL) {}
+
+    DynamicLibrary::~DynamicLibrary()
     {
+        if (isLoad()) {
+            DynamicLibrary::dlclose(libraryHandle_);
+        }
+    }
+
+    void DynamicLibrary::load(const char *fileName, OpenFlags flags)
+    {
+        if (isLoad()) {
+            lastErrorMessage_.clear();
+            errorCode_ = loader_error::LIBRARY_ALREADY_LOADED;
+            return;
+        }
+
         if ((flags & LAZY_BINDING) == 0) {
             flags |= ONLOAD_BINDING;
         }
 
-        const char* c_fileName = fileName.empty() ? NULL : fileName.c_str();
-        libraryHandle_ = DynamicLibrary::dlopen(c_fileName, flags);
+        libraryHandle_ = DynamicLibrary::dlopen(fileName, flags);
         if (libraryHandle_ == NULL) {
             lastErrorMessage_ = DynamicLibrary::dlerror();
             errorCode_ = loader_error::LIBRARY_LOAD_FAILED;
         }
     }
 
-    DynamicLibrary::~DynamicLibrary()
+    void DynamicLibrary::load(const std::string& fileName, OpenFlags flags)
     {
-        if (isOpen()) {
-            DynamicLibrary::dlclose(libraryHandle_);
+        if (! fileName.empty()) {
+            load(fileName, flags);
+        }
+    }
+
+    void DynamicLibrary::load(enum SpecialFileNames fileName, OpenFlags flags)
+    {
+        if (fileName == MAIN_PROGRAM) {
+            load(NULL, flags);
         }
     }
 }

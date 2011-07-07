@@ -43,7 +43,9 @@ namespace dl
     {
         enum LoaderError
         {
+            LIBRARY_ALREADY_LOADED,
             LIBRARY_LOAD_FAILED,
+            LIBRARY_NOT_LOADED,
             SYMBOL_RESOLUTION_FAILED
         };
 
@@ -75,19 +77,35 @@ namespace dl
                 GLOBAL_BINDING      = RTLD_GLOBAL,
                 LOCAL_BINDING       = RTLD_LOCAL
 #if defined(__GLIBC__)
-#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)
+# if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)
                ,NOUNLOAD_ONCLOSE    = RTLD_NODELETE,
                 NOLOAD_ONOPEN       = RTLD_NOLOAD
-#endif
-#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 3)
+# endif
+# if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 3)
                ,DEEP_BINDING        = RTLD_DEEPBIND
-#endif
+# endif
 #endif /* __GLIBC__ */
             };
 
-            DynamicLibrary(const std::string& fileName = std::string(),
+            enum SpecialFileNames
+            {
+                MAIN_PROGRAM
+            };
+
+            DynamicLibrary();
+
+            template <typename T>
+            DynamicLibrary(T const& fileName,
                 OpenFlags flags = ONLOAD_BINDING);
+
             ~DynamicLibrary();
+
+            void load(const char* fileName,
+                OpenFlags flags = ONLOAD_BINDING);
+            void load(const std::string& fileName,
+                OpenFlags flags = ONLOAD_BINDING);
+            void load(enum SpecialFileNames fileName,
+                OpenFlags flags = ONLOAD_BINDING);
 
             //
             // Methods for symbol resolution
@@ -126,7 +144,7 @@ namespace dl
             // Error handling
             //
 
-            bool isOpen() const { return libraryHandle_ != NULL; }
+            bool isLoad() const { return libraryHandle_ != NULL; }
 
             std::error_code getLastError() const
                 { return errorCode_; }
@@ -140,12 +158,16 @@ namespace dl
 
             static void* dlopen(const std::string& fileName, OpenFlags flags)
                 { return posix::dlopen(fileName.c_str(), flags); }
+            static void* dlopen(const char* fileName, OpenFlags flags)
+                { return posix::dlopen(fileName, flags); }
 
             static int dlclose(void* handle)
                 { return posix::dlclose(handle); }
 
             static void* dlsym(void* handle, const std::string &symbol)
                 { return posix::dlsym(handle, symbol.c_str()); }
+            static void* dlsym(void* handle, const char* symbol)
+                { return posix::dlsym(handle, symbol); }
 
             static std::string dlerror();
 
@@ -168,6 +190,13 @@ namespace dl
             Type* getVariable(void* handle, const std::string& symbol);
     };
 
+    template <typename T>
+    DynamicLibrary::DynamicLibrary(T const& fileName, OpenFlags flags)
+        : libraryHandle_(NULL)
+    {
+        load(fileName, flags);
+    }
+
     inline std::string DynamicLibrary::dlerror()
     {
         const char *message = posix::dlerror();
@@ -180,18 +209,24 @@ namespace dl
     {
         boost::function<Signature> function;
 
-        DynamicLibrary::dlerror();
-        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-        std::string errorMessage = DynamicLibrary::dlerror();
-        if ((address == NULL) && errorMessage.empty()) {
-            lastErrorMessage_ = errorMessage;
-            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+        if (isLoad()) {
+            DynamicLibrary::dlerror();
+            void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
+            std::string errorMessage = DynamicLibrary::dlerror();
+            if ((address == NULL) && errorMessage.empty()) {
+                lastErrorMessage_ = errorMessage;
+                errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+            }
+            else {
+                using namespace boost;
+                typedef typename add_pointer<Signature>::type function_pointer;
+                function = reinterpret_cast<function_pointer>(address);
+                errorCode_.clear();
+            }
         }
         else {
-            using namespace boost;
-            typedef typename add_pointer<Signature>::type function_pointer;
-            function = reinterpret_cast<function_pointer>(address);
-            errorCode_.clear();
+            lastErrorMessage_.clear();
+            errorCode_ = loader_error::LIBRARY_NOT_LOADED;
         }
 
         return function;
@@ -200,18 +235,25 @@ namespace dl
     template<typename Type>
     Type* DynamicLibrary::getVariable(void* handle, const std::string &symbol)
     {
-        DynamicLibrary::dlerror();
-        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-        std::string errorMessage = DynamicLibrary::dlerror();
-        if ((address == NULL) && errorMessage.empty()) {
-            lastErrorMessage_ = errorMessage;
-            errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+        if (isLoad()) {
+            DynamicLibrary::dlerror();
+            void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
+            std::string errorMessage = DynamicLibrary::dlerror();
+            if ((address == NULL) && errorMessage.empty()) {
+                lastErrorMessage_ = errorMessage;
+                errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+            }
+            else {
+                errorCode_.clear();
+            }
+
+            return reinterpret_cast<Type*>(address);
         }
         else {
-            errorCode_.clear();
+            lastErrorMessage_.clear();
+            errorCode_ = loader_error::LIBRARY_NOT_LOADED;
+            return NULL;
         }
-
-        return reinterpret_cast<Type*>(address);
     }
 
     //

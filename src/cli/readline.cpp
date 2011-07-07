@@ -31,16 +31,35 @@ namespace cli { namespace readline
     using namespace boost;
     using namespace cli;
 
-    const char LIBREADLINE_FILENAME[] = "libreadline.so";
+    //
+    // Readline library file names to search for
+    //
+
+    const char* LIBREADLINE_FILENAMES[] = {
+        "libreadline.so",
+        "libreadline.so.5",
+        "libreadline.so.6",
+        NULL
+    };
 
     //
     // Class ReadlineLibrary
     //
 
-    ReadlineLibrary::ReadlineLibrary()
-        : dl::DynamicLibrary(LIBREADLINE_FILENAME)
+    ReadlineLibrary::ReadlineLibrary() : dl::DynamicLibrary()
     {
-        if (isOpen()) {
+        // Try to load some readline libray
+        for (const char** library = LIBREADLINE_FILENAMES; *library != NULL;
+            ++library)
+        {
+            load(*library);
+            if (isLoad()) {
+                break;
+            }
+        }
+
+        // Get access to the symbols of the library that will go to use
+        if (isLoad()) {
             readline_ = getFunction<char* (const char*)>("readline");
             if (getLastError() != std::errc::success) {
                 return;
