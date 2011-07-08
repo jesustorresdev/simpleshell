@@ -1,5 +1,5 @@
 /*
- * boost_parser_base.hpp - Base class for parsers based on boost::spirit
+ * boost_parser_base.hpp - Base class for parsers based on Boost.Spirit
  *
  *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *

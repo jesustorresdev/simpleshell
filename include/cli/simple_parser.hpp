@@ -39,7 +39,7 @@
 namespace cli { namespace parser { namespace simpleparser
 {
     namespace qi = boost::spirit::qi;
-    namespace ascii = boost::spirit::ascii;
+    namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace phoenix = boost::phoenix;
 
     typedef std::vector<std::string> CommandDetails;
@@ -47,10 +47,14 @@ namespace cli { namespace parser { namespace simpleparser
     //
     // Class SimpleParser
     //
+    // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
+    // because the Boost.Spirit support of ASCII encoding launches an
+    // exceptions when finds 8-bit characters.
+    //
 
     template <typename Iterator>
     struct SimpleParser
-        : BoostParserBase<Iterator, CommandDetails, ascii::space_type>
+        : BoostParserBase<Iterator, CommandDetails, iso8859_1::space_type>
     {
         typedef SimpleParser<Iterator> Type;
         typedef typename Type::sig_type sig_type;
@@ -66,8 +70,8 @@ namespace cli { namespace parser { namespace simpleparser
             using qi::fail;
             using qi::lexeme;
             using qi::on_error;
-            using ascii::char_;
-            using ascii::space;
+            using iso8859_1::char_;
+            using iso8859_1::space;
             using phoenix::at;
             using phoenix::at_c;
             using phoenix::construct;
@@ -112,11 +116,12 @@ namespace cli { namespace parser { namespace simpleparser
         qi::rule<Iterator> eol;
         qi::rule<Iterator, char()> character;
         qi::rule<Iterator, char()> escape;
-        qi::rule<Iterator, std::string(), ascii::space_type> word;
-        qi::rule<Iterator, std::string(), ascii::space_type> quotedString;
-        qi::rule<Iterator, std::string(), ascii::space_type> doubleQuotedString;
-        qi::rule<Iterator, std::string(), ascii::space_type> argument;
-        qi::rule<Iterator, sig_type, ascii::space_type> start;
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> word;
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> quotedString;
+        qi::rule<Iterator, std::string(),
+            iso8859_1::space_type> doubleQuotedString;
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
+        qi::rule<Iterator, sig_type, iso8859_1::space_type> start;
     };
 }}}
 

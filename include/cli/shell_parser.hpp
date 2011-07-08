@@ -154,16 +154,20 @@ BOOST_FUSION_ADAPT_STRUCT(
 namespace cli { namespace parser { namespace shellparser
 {
     namespace qi = boost::spirit::qi;
-    namespace ascii = boost::spirit::ascii;
+    namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace phoenix = boost::phoenix;
 
     //
     // Class ShellParser
     //
+    // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
+    // because the Boost.Spirit support of ASCII encoding launches an
+    // exceptions when finds 8-bit characters.
+    //
 
     template <typename Iterator>
     struct ShellParser
-        : BoostParserBase<Iterator, CommandDetails, ascii::space_type>
+        : BoostParserBase<Iterator, CommandDetails, iso8859_1::space_type>
     {
         typedef ShellParser<Iterator> Type;
         typedef typename Type::sig_type sig_type;
@@ -184,8 +188,8 @@ namespace cli { namespace parser { namespace shellparser
             using qi::lit;
             using qi::on_error;
             using qi::raw;
-            using ascii::char_;
-            using ascii::space;
+            using iso8859_1::char_;
+            using iso8859_1::space;
             using phoenix::at;
             using phoenix::at_c;
             using phoenix::begin;
@@ -361,9 +365,10 @@ namespace cli { namespace parser { namespace shellparser
         qi::rule<Iterator, std::string(),
             qi::locals<int> > redirectionArgument;
         qi::rule<Iterator, VariableAssignment()> assignment;
-        qi::rule<Iterator, StdioRedirection(), ascii::space_type> redirection;
-        qi::rule<Iterator, CommandDetails(), ascii::space_type> command;
-        qi::rule<Iterator, sig_type, ascii::space_type> start;
+        qi::rule<Iterator, StdioRedirection(),
+            iso8859_1::space_type> redirection;
+        qi::rule<Iterator, CommandDetails(), iso8859_1::space_type> command;
+        qi::rule<Iterator, sig_type, iso8859_1::space_type> start;
 
         protected:
 
