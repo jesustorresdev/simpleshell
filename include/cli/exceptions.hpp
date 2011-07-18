@@ -21,7 +21,7 @@
 
 #include <exception>
 
-namespace cli { namespace exceptions
+namespace cli { namespace exception
 {
     //
     // Class UnknownCallbackException

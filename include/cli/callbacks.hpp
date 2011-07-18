@@ -85,7 +85,7 @@ namespace cli { namespace callback
         template <typename T, typename Functor>
         static void setCallback(T& interpreter, Functor function)
         {
-            throw cli::exceptions::UnknownCallbackException(
+            throw cli::exception::UnknownCallbackException(
                 Callback<T>::name());
         }
     };
