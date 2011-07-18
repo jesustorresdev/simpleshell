@@ -315,13 +315,7 @@ namespace cli
     template <template <typename> class Parser>
     bool CommandLineInterpreter<Parser>::emptyLine()
     {
-        if (! emptyLineCallback_.empty()) {
-            return emptyLineCallback_();
-        }
-        else if (! lastCommand_.empty()) {
-            return interpretOneLine(lastCommand_);
-        }
-        return false;
+        return emptyLineCallback_.empty() ? false : emptyLineCallback_();
     }
 
     template <template <typename> class Parser>
