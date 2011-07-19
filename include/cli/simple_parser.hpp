@@ -33,8 +33,9 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/qi.hpp>
 
+#define translate(str) str  // TODO: Use Boost.Locale when available
+
 #include <cli/boost_parser_base.hpp>
-#include <cli/internals.hpp>
 
 namespace cli { namespace parser { namespace simpleparser
 {

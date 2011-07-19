@@ -24,8 +24,6 @@
 
 #include <boost/system/error_code.hpp>
 
-#define translate(str) str  // TODO: Use Boost.Locale when available
-
 namespace cli { namespace internals
 {
 

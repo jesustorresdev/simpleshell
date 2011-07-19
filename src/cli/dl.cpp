@@ -18,6 +18,8 @@
 
 #include <string>
 
+#define gettext(str) str    // TODO: Use Boost.Locale when available
+
 #include <cli/dl.hpp>
 #include <cli/internals.hpp>
 
@@ -33,15 +35,15 @@ namespace dl
     // Error handling support
     //
 
-    namespace loader_error
+    namespace LoaderError
     {
 
-        std::error_code make_error_code(LoaderError e)
+        std::error_code make_error_code(LoaderErrorType e)
         {
             return std::error_code(static_cast<int>(e), loaderCategory());
         }
 
-        std::error_condition make_error_condition(LoaderError e)
+        std::error_condition make_error_condition(LoaderErrorType e)
         {
             return std::error_condition(static_cast<int>(e),
                 loaderCategory());
@@ -60,16 +62,16 @@ namespace dl
     std::string LoaderCategory::message(int ev) const
     {
         switch (ev) {
-        case loader_error::LIBRARY_ALREADY_LOADED:
-            return "A dynamic library is already loaded";
-        case loader_error::LIBRARY_LOAD_FAILED:
-            return "Failed to load dynamic library";
-        case loader_error::LIBRARY_NOT_LOADED:
-            return "No loaded dynamic library";
-        case loader_error::SYMBOL_RESOLUTION_FAILED:
-            return "Failed to resolve symbol";
+        case LoaderError::LIBRARY_ALREADY_LOADED:
+            return gettext("A dynamic library is already loaded");
+        case LoaderError::LIBRARY_LOAD_FAILED:
+            return gettext("Failed to load dynamic library");
+        case LoaderError::LIBRARY_NOT_LOADED:
+            return gettext("No loaded dynamic library");
+        case LoaderError::SYMBOL_RESOLUTION_FAILED:
+            return gettext("Failed to resolve symbol");
         default:
-            return "Unknown dynamic linking loader error";
+            return gettext("Unknown dynamic linking loader error");
         }
     }
 
@@ -77,13 +79,9 @@ namespace dl
     LoaderCategory::default_error_condition(int ev) const
     {
         switch (ev) {
-        case loader_error::LIBRARY_ALREADY_LOADED:
-            return std::errc::address_in_use;
-        case loader_error::LIBRARY_LOAD_FAILED:
+        case LoaderError::LIBRARY_LOAD_FAILED:
             return std::errc::permission_denied;
-        case loader_error::LIBRARY_NOT_LOADED:
-            return std::errc::address_not_available;
-        case loader_error::SYMBOL_RESOLUTION_FAILED:
+        case LoaderError::SYMBOL_RESOLUTION_FAILED:
             return std::errc::address_not_available;
         default:
             return std::error_condition(ev, *this);
@@ -113,7 +111,7 @@ namespace dl
     {
         if (isLoad()) {
             lastErrorMessage_.clear();
-            errorCode_ = loader_error::LIBRARY_ALREADY_LOADED;
+            errorCode_ = LoaderError::LIBRARY_ALREADY_LOADED;
             return;
         }
 
@@ -124,7 +122,7 @@ namespace dl
         libraryHandle_ = DynamicLibrary::dlopen(fileName, flags);
         if (libraryHandle_ == NULL) {
             lastErrorMessage_ = DynamicLibrary::dlerror();
-            errorCode_ = loader_error::LIBRARY_LOAD_FAILED;
+            errorCode_ = LoaderError::LIBRARY_LOAD_FAILED;
         }
     }
 

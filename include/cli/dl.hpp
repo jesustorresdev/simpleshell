@@ -39,18 +39,18 @@ namespace dl
     // Error handling support
     //
 
-    namespace loader_error
+    namespace LoaderError
     {
-        enum LoaderError
+        enum LoaderErrorType
         {
-            LIBRARY_ALREADY_LOADED,
+            LIBRARY_ALREADY_LOADED = 1,
             LIBRARY_LOAD_FAILED,
             LIBRARY_NOT_LOADED,
             SYMBOL_RESOLUTION_FAILED
         };
 
-        std::error_code make_error_code(LoaderError e);
-        std::error_condition make_error_condition(LoaderError e);
+        std::error_code make_error_code(LoaderErrorType e);
+        std::error_condition make_error_condition(LoaderErrorType e);
     }
 
     class LoaderCategory : public std::error_category
@@ -215,7 +215,7 @@ namespace dl
             std::string errorMessage = DynamicLibrary::dlerror();
             if ((address == NULL) && errorMessage.empty()) {
                 lastErrorMessage_ = errorMessage;
-                errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+                errorCode_ = LoaderError::SYMBOL_RESOLUTION_FAILED;
             }
             else {
                 using namespace boost;
@@ -226,7 +226,7 @@ namespace dl
         }
         else {
             lastErrorMessage_.clear();
-            errorCode_ = loader_error::LIBRARY_NOT_LOADED;
+            errorCode_ = LoaderError::LIBRARY_NOT_LOADED;
         }
 
         return function;
@@ -241,7 +241,7 @@ namespace dl
             std::string errorMessage = DynamicLibrary::dlerror();
             if ((address == NULL) && errorMessage.empty()) {
                 lastErrorMessage_ = errorMessage;
-                errorCode_ = loader_error::SYMBOL_RESOLUTION_FAILED;
+                errorCode_ = LoaderError::SYMBOL_RESOLUTION_FAILED;
             }
             else {
                 errorCode_.clear();
@@ -251,7 +251,7 @@ namespace dl
         }
         else {
             lastErrorMessage_.clear();
-            errorCode_ = loader_error::LIBRARY_NOT_LOADED;
+            errorCode_ = LoaderError::LIBRARY_NOT_LOADED;
             return NULL;
         }
     }
@@ -307,13 +307,14 @@ namespace dl
 }
 
 //
-// Enable automatic conversion from LoaderError enum to error_code constants
+// Enable automatic conversion from LoaderError::LoaderErrorType enum to
+// error_code constants.
 //
 
 namespace boost { namespace system
 {
     template <>
-    struct is_error_code_enum<dl::loader_error::LoaderError>
+    struct is_error_code_enum<dl::LoaderError::LoaderErrorType>
         : public true_type {};
 }}
 
