@@ -23,7 +23,9 @@
 #include <map>
 #include <string>
 
+#include <boost/mpl/assert.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/type_traits.hpp>
 
 #include <cli/callbacks.hpp>
 #include <cli/internals.hpp>
@@ -43,6 +45,9 @@ namespace cli
 
             typedef Parser<std::string::iterator> ParserType;
             typedef typename ParserType::CommandDetailsType CommandDetailsType;
+            typedef typename ParserType::ParserErrorType ParserErrorType;
+
+            BOOST_MPL_ASSERT((boost::is_convertible<ParserErrorType, bool>));
 
             //
             // Class constructors
@@ -118,6 +123,8 @@ namespace cli
             virtual void preDoCommand(std::string& line) {};
             virtual bool postDoCommand(bool isFinished,
                 const std::string& line);
+            virtual bool parserError(ParserErrorType const& error,
+                const std::string& line);
 
             //
             // Hook methods invoked once inside loop()
@@ -153,6 +160,7 @@ namespace cli
                 (EmptyLineCallback, emptyLineCallback_)
                 (PreDoCommandCallback, preDoCommandCallback_)
                 (PostDoCommandCallback, postDoCommandCallback_)
+                (ParserErrorCallback, parserErrorCallback_)
                 (PreLoopCallback, preLoopCallback_)
                 (PostLoopCallback, postLoopCallback_)
             )
@@ -267,8 +275,7 @@ namespace cli
     }
 
     template <template <typename> class Parser>
-    bool CommandLineInterpreter<Parser>::interpretOneLine(
-        std::string line)
+    bool CommandLineInterpreter<Parser>::interpretOneLine(std::string line)
     {
         preDoCommand(line);
 
@@ -284,16 +291,21 @@ namespace cli
         while (begin != end) {
             std::string command;
             CommandDetailsType details;
-            bool success = (*lineParser_)(begin, end, command, details);
-            if (! success)
-                break;
+            ParserErrorType error =
+                (*lineParser_)(begin, end, command, details);
 
-            bool isFinished = doCommand(command, details);
-            isFinished = postDoCommand(isFinished, line);
-            if (isFinished)
-                return true;
+            bool isFinished;
+            if (error) {
+                isFinished = parserError(error, line);
+                return isFinished;
+            }
+            else {
+                isFinished = doCommand(command, details);
+                isFinished = postDoCommand(isFinished, line);
+                if (isFinished)
+                    return true;
+            }
         }
-
         return false;
     }
 
@@ -324,6 +336,14 @@ namespace cli
     {
         return postDoCommandCallback_.empty() ?
             isFinished : postDoCommandCallback_(isFinished, line);
+    }
+
+    template <template <typename> class Parser>
+    bool CommandLineInterpreter<Parser>::parserError(
+        ParserErrorType const& error, const std::string& line)
+    {
+        return parserErrorCallback_.empty() ?
+            false : parserErrorCallback_(error, line);
     }
 
     template <template <typename> class Parser>

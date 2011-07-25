@@ -46,6 +46,7 @@ namespace cli { namespace parser
         typedef BoostParserBase<Iterator, Details, T1, T2, T3> Type;
 
         typedef Details CommandDetailsType;
+        typedef bool ParserErrorType;
         typedef typename qi::grammar<Iterator,
             fusion::vector<std::string&, Details&>(), T1, T2, T3> ParserType;
 
@@ -62,19 +63,19 @@ namespace cli { namespace parser
         // The interpreter expects the parser is a callable object
         //
 
-        bool operator()(Iterator& begin, Iterator end, std::string& command,
-            Details& details)
+        ParserErrorType operator()(Iterator& begin, Iterator end,
+            std::string& command, Details& details)
             { return parse(begin, end, command, details); }
 
         protected:
 
-            virtual bool parse(Iterator& begin, Iterator end,
+            virtual ParserErrorType parse(Iterator& begin, Iterator end,
                 std::string& command, Details& details)
             {
                 // Passing the attributes 'command' and 'details' to the parser
                 // forces that every valid grammar must to return a two
                 // references Sequence.
-                return qi::phrase_parse(begin, end, *this, skipper_type(),
+                return !qi::phrase_parse(begin, end, *this, skipper_type(),
                     command, details);
             }
 

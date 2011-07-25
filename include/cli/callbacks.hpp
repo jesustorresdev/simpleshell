@@ -172,6 +172,26 @@ namespace cli { namespace callback
     };
 
     //
+    // ParserErrorCallback
+    //
+
+    template <typename T>
+    struct ParserErrorCallback
+    {
+            typedef bool (Type)(typename T::ParserErrorType const&,
+                const std::string&);
+            static const char* name() { return "ParserErrorCallback"; }
+    };
+
+    template<>
+    struct SetCallbackImpl<ParserErrorCallback>
+    {
+            template <typename T, typename Functor>
+            static void setCallback(T& interpreter, Functor function)
+            { interpreter.parserErrorCallback_ = function; }
+    };
+
+    //
     // PreLoopCallback
     //
 
