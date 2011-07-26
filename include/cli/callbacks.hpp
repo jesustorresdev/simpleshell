@@ -23,7 +23,6 @@
 #include <vector>
 
 #include <boost/function.hpp>
-#include <boost/function_types/function_type.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>

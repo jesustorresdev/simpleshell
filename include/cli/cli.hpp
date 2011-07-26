@@ -23,9 +23,15 @@
 #include <map>
 #include <string>
 
+#include <boost/function_types/is_nonmember_callable_builtin.hpp>
+#include <boost/function_types/parameter_types.hpp>
+#include <boost/function_types/result_type.hpp>
 #include <boost/mpl/assert.hpp>
+#include <boost/mpl/at.hpp>
+#include <boost/mpl/int.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/utility.hpp>
 
 #include <cli/callbacks.hpp>
 #include <cli/internals.hpp>
@@ -33,6 +39,8 @@
 
 namespace cli
 {
+    using boost::false_type;
+
     //
     // Class CommandLineInterpreter
     //
@@ -43,11 +51,47 @@ namespace cli
         public:
             typedef CommandLineInterpreter<Parser> Type;
 
-            typedef Parser<std::string::iterator> ParserType;
-            typedef typename ParserType::CommandDetailsType CommandDetailsType;
-            typedef typename ParserType::ParserErrorType ParserErrorType;
+            //
+            // By default, we expect Parser to be an object that models STL
+            // function object concepts.
+            //
 
-            BOOST_MPL_ASSERT((boost::is_convertible<ParserErrorType, bool>));
+            template <typename T, typename Enabled = false_type>
+            struct ParserTraits
+            {
+                typedef typename T::arg4_type CommandDetailsType;
+                typedef typename T::result_type ParserErrorType;
+            };
+
+            //
+            // But also, Parser can be a function, function pointer or
+            // function reference.
+            //
+
+            template <typename T>
+            struct ParserTraits<T, typename boost::enable_if<
+                boost::function_types::is_nonmember_callable_builtin<T> >::type>
+            {
+                // TODO: Check this code when the interpreter supports to
+                // use a function or function pointer as parser.
+                typedef typename boost::mpl::at<
+                    typename boost::function_types::parameter_types<T>::type,
+                    boost::mpl::int_<4>
+                >::type CommandDetailsType;
+                typedef typename boost::function_types::result_type<T>::type
+                    ParserErrorType;
+            };
+
+            //
+            // Define types related to Parser type
+            //
+
+            typedef Parser<std::string::iterator> ParserType;
+            typedef typename boost::remove_reference<
+                typename ParserTraits<ParserType>::CommandDetailsType
+            >::type CommandDetailsType;
+            typedef typename ParserTraits<ParserType>::ParserErrorType
+                ParserErrorType;
 
             //
             // Class constructors

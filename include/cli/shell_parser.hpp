@@ -168,7 +168,7 @@ namespace cli { namespace parser { namespace shellparser
 
     template <typename Iterator>
     struct ShellParser
-        : BoostParserBase<Iterator, CommandDetails, iso8859_1::space_type>
+        : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
     {
         typedef ShellParser<Iterator> Type;
         typedef typename Type::sig_type sig_type;

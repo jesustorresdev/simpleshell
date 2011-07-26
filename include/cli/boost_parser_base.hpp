@@ -19,8 +19,6 @@
 #ifndef BOOST_PARSER_BASE_HPP_
 #define BOOST_PARSER_BASE_HPP_
 
-#include <string>
-
 #include <boost/fusion/include/vector.hpp>
 #include <boost/spirit/include/qi.hpp>
 
@@ -36,23 +34,23 @@ namespace cli { namespace parser
     // class BoostParserBase
     //
 
-    template <typename Iterator, typename Details,
+    template <typename Command, typename Details,
         typename T1 = unused_type, typename T2 = unused_type,
         typename T3 = unused_type>
     struct BoostParserBase
-        : qi::grammar<Iterator, fusion::vector<std::string&, Details&>(),
-                      T1, T2, T3>
+        : qi::grammar<typename Command::iterator,
+              fusion::vector<Command&, Details&>(), T1, T2, T3>
     {
-        typedef BoostParserBase<Iterator, Details, T1, T2, T3> Type;
+        typedef BoostParserBase<Command, Details, T1, T2, T3> Type;
 
-        typedef Details CommandDetailsType;
+        typedef typename Command::iterator IteratorType;
+        typedef typename qi::grammar<IteratorType,
+            fusion::vector<Command&, Details&>(), T1, T2, T3> ParserType;
         typedef bool ParserErrorType;
-        typedef typename qi::grammar<Iterator,
-            fusion::vector<std::string&, Details&>(), T1, T2, T3> ParserType;
 
         //
-        // Declare the typedefs needed to replace qi::grammar by
-        // BoostParserBase more easier.
+        // Define the types needed to replace qi::grammar by BoostParserBase
+        // in derived classes more easier.
         //
 
         typedef Type base_type;
@@ -60,17 +58,23 @@ namespace cli { namespace parser
         typedef typename Type::start_type start_type;
 
         //
-        // The interpreter expects the parser is a callable object
+        // Define the members needed to model STL function object concepts.
         //
 
-        ParserErrorType operator()(Iterator& begin, Iterator end,
-            std::string& command, Details& details)
+        typedef ParserErrorType result_type;
+        typedef IteratorType& arg1_type;
+        typedef IteratorType arg2_type;
+        typedef Command& arg3_type;
+        typedef Details& arg4_type;
+
+        ParserErrorType operator()(IteratorType& begin, IteratorType end,
+            Command& command, Details& details)
             { return parse(begin, end, command, details); }
 
         protected:
 
-            virtual ParserErrorType parse(Iterator& begin, Iterator end,
-                std::string& command, Details& details)
+            virtual ParserErrorType parse(IteratorType& begin,
+                IteratorType end, Command& command, Details& details)
             {
                 // Passing the attributes 'command' and 'details' to the parser
                 // forces that every valid grammar must to return a two

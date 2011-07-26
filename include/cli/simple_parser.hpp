@@ -55,7 +55,7 @@ namespace cli { namespace parser { namespace simpleparser
 
     template <typename Iterator>
     struct SimpleParser
-        : BoostParserBase<Iterator, CommandDetails, iso8859_1::space_type>
+        : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
     {
         typedef SimpleParser<Iterator> Type;
         typedef typename Type::sig_type sig_type;
