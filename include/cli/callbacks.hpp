@@ -67,10 +67,8 @@
 //
 
 #define CLI_CALLBACK_SIGNATURE_ASSERT(CALLBACK, FUNCTOR)                \
-    typedef typename CALLBACK<Type>::Type ExpectedSignature;            \
-    typedef typename                                                    \
-        boost::function_types::function_type<FUNCTOR>::type Signature;  \
-    BOOST_MPL_ASSERT((boost::is_same<ExpectedSignature, Signature>))
+    BOOST_MPL_ASSERT((boost::is_convertible<FUNCTOR,                    \
+        boost::function<typename CALLBACK<Type>::Type> >))
 
 
 namespace cli { namespace callback
