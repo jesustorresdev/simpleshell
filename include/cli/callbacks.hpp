@@ -99,7 +99,7 @@ namespace cli { namespace callback
         static const char* name() { return "DoCommandCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<DoCommandCallback>
     {
         template <typename T, typename Functor>
@@ -122,7 +122,7 @@ namespace cli { namespace callback
         static const char* name() { return "EmptyLineCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<EmptyLineCallback>
     {
         template <typename T, typename Functor>
@@ -141,7 +141,7 @@ namespace cli { namespace callback
         static const char* name() { return "PreDoCommandCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<PreDoCommandCallback>
     {
         template <typename T, typename Functor>
@@ -160,7 +160,7 @@ namespace cli { namespace callback
         static const char* name() { return "PostDoCommandCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<PostDoCommandCallback>
     {
         template <typename T, typename Functor>
@@ -180,7 +180,7 @@ namespace cli { namespace callback
             static const char* name() { return "ParserErrorCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<ParserErrorCallback>
     {
             template <typename T, typename Functor>
@@ -199,7 +199,7 @@ namespace cli { namespace callback
         static const char* name() { return "PreLoopCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<PreLoopCallback>
     {
         template <typename T, typename Functor>
@@ -218,7 +218,7 @@ namespace cli { namespace callback
         static const char* name() { return "PostLoopCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<PostLoopCallback>
     {
         template <typename T, typename Functor>
@@ -237,7 +237,7 @@ namespace cli { namespace callback
         static const char* name() { return "VariableLookupCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<VariableLookupCallback>
     {
         template <typename T, typename Functor>
@@ -256,7 +256,7 @@ namespace cli { namespace callback
         static const char* name() { return "PathnameExpansionCallback"; }
     };
 
-    template<>
+    template <>
     struct SetCallbackImpl<PathnameExpansionCallback>
     {
         template <typename T, typename Functor>

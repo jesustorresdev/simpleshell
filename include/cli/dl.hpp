@@ -111,31 +111,31 @@ namespace dl
             // Methods for symbol resolution
             //
 
-            template<typename Signature>
+            template <typename Signature>
             boost::function<Signature>
             getFunction(const std::string& symbol)
                 { return getFunction<Signature>(libraryHandle_, symbol); }
             
-            template<typename Type>
+            template <typename Type>
             Type* getVariable(const std::string& symbol)
                 { return getVariable<Type>(libraryHandle_, symbol); }
 
 #if defined(_GNU_SOURCE)
-            template<typename Signature>
+            template <typename Signature>
             boost::function<Signature>
             getDefaultFunction(const std::string& symbol)
                 { return getFunction<Signature>(RTLD_DEFAULT, symbol); }
 
-            template<typename Signature>
+            template <typename Signature>
             boost::function<Signature>
             getNextFunction(const std::string& symbol)
                 { return getFunction<Signature>(RTLD_NEXT, symbol); }
 
-            template<typename Type>
+            template <typename Type>
             Type* getDefaultVariable(const std::string& symbol)
                 { return getVariable<Type>(RTLD_DEFAULT, symbol); }
 
-            template<typename Type>
+            template <typename Type>
             Type* getNextVariable(const std::string& symbol)
                 { return getVariable<Type>(RTLD_NEXT, symbol); }
 #endif /* _GNU_SOURCE */
@@ -182,11 +182,11 @@ namespace dl
             // Private methods for symbol resolution
             //
 
-            template<typename Signature>
+            template <typename Signature>
             boost::function<Signature>
             getFunction(void* handle, const std::string& symbol);
 
-            template<typename Type>
+            template <typename Type>
             Type* getVariable(void* handle, const std::string& symbol);
     };
 
@@ -203,7 +203,7 @@ namespace dl
         return (message == NULL) ? std::string() : std::string(message);
     }
 
-    template<typename Signature>
+    template <typename Signature>
     boost::function<Signature> DynamicLibrary::getFunction(void* handle,
         const std::string& symbol)
     {
@@ -232,7 +232,7 @@ namespace dl
         return function;
     }
 
-    template<typename Type>
+    template <typename Type>
     Type* DynamicLibrary::getVariable(void* handle, const std::string &symbol)
     {
         if (isLoad()) {

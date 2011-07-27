@@ -45,7 +45,7 @@ namespace cli
     // Class CommandLineInterpreter
     //
 
-    template <template<typename> class Parser>
+    template <template <typename> class Parser>
     class CommandLineInterpreter
     {
         public:
