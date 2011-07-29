@@ -1,7 +1,7 @@
 /*
  * dl.hpp - Programming interface to the dynamic linking loader
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,39 +108,6 @@ namespace dl
                 OpenFlags flags = ONLOAD_BINDING);
 
             //
-            // Methods for symbol resolution
-            //
-
-            template <typename Signature>
-            boost::function<Signature>
-            getFunction(const std::string& symbol)
-                { return getFunction<Signature>(libraryHandle_, symbol); }
-            
-            template <typename Type>
-            Type* getVariable(const std::string& symbol)
-                { return getVariable<Type>(libraryHandle_, symbol); }
-
-#if defined(_GNU_SOURCE)
-            template <typename Signature>
-            boost::function<Signature>
-            getDefaultFunction(const std::string& symbol)
-                { return getFunction<Signature>(RTLD_DEFAULT, symbol); }
-
-            template <typename Signature>
-            boost::function<Signature>
-            getNextFunction(const std::string& symbol)
-                { return getFunction<Signature>(RTLD_NEXT, symbol); }
-
-            template <typename Type>
-            Type* getDefaultVariable(const std::string& symbol)
-                { return getVariable<Type>(RTLD_DEFAULT, symbol); }
-
-            template <typename Type>
-            Type* getNextVariable(const std::string& symbol)
-                { return getVariable<Type>(RTLD_NEXT, symbol); }
-#endif /* _GNU_SOURCE */
-
-            //
             // Error handling
             //
 
@@ -151,6 +118,85 @@ namespace dl
 
             const std::string getLastErrorMessage() const
                 { return lastErrorMessage_; }
+
+            //
+            // Methods for symbol resolution
+            //
+
+            template <typename Signature>
+            boost::function<Signature>&
+            getFunction(boost::function<Signature>& function,
+                const std::string& symbol);
+
+            template <typename Signature>
+            boost::function<Signature>
+            getFunction(const std::string& symbol);
+
+            template <typename Type>
+            Type*& getAddress(Type*& pointer, const std::string& symbol);
+
+            template <typename Type>
+            Type* getAddress(const std::string& symbol);
+
+#if defined(_GNU_SOURCE)
+            template <typename Signature>
+            boost::function<Signature>&
+            getDefaultFunction(boost::function<Signature>& function,
+                const std::string& symbol)
+            {
+                return getFunction<Signature>(function, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Signature>
+            boost::function<Signature>
+            getDefaultFunction(const std::string& symbol)
+            {
+                boost::function<Signature> function;
+                return getFunction<Signature>(function, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Signature>
+            boost::function<Signature>&
+            getNextFunction(boost::function<Signature>& function,
+                const std::string& symbol)
+            {
+                return getFunction<Signature>(function, RTLD_NEXT, symbol);
+            }
+
+            template <typename Signature>
+            boost::function<Signature>
+            getNextFunction(const std::string& symbol)
+            {
+                boost::function<Signature> function;
+                return getFunction<Signature>(function, RTLD_NEXT, symbol);
+            }
+
+            template <typename Type>
+            Type*& getDefaultAddress(Type*& pointer, const std::string& symbol)
+            {
+                return getAddress<Type>(pointer, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Type>
+            Type* getDefaultAddress(const std::string& symbol)
+            {
+                Type* pointer;
+                return getAddress<Type>(pointer, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Type>
+            Type*& getNextAddress(Type*& pointer, const std::string& symbol)
+            {
+                return getAddress<Type>(pointer, RTLD_NEXT, symbol);
+            }
+
+            template <typename Type>
+            Type* getNextVariable(const std::string& symbol)
+            {
+                Type* pointer;
+                return getAddress<Type>(pointer, RTLD_NEXT, symbol);
+            }
+#endif /* _GNU_SOURCE */
 
             //
             // C library function wrappers
@@ -183,11 +229,13 @@ namespace dl
             //
 
             template <typename Signature>
-            boost::function<Signature>
-            getFunction(void* handle, const std::string& symbol);
+            boost::function<Signature>&
+            getFunction(boost::function<Signature>& function, void* handle,
+                const std::string& symbol);
 
             template <typename Type>
-            Type* getVariable(void* handle, const std::string& symbol);
+            Type*& getAddress(Type*& pointer, void* handle,
+                const std::string& symbol);
     };
 
     template <typename T>
@@ -204,25 +252,11 @@ namespace dl
     }
 
     template <typename Signature>
-    boost::function<Signature> DynamicLibrary::getFunction(void* handle,
-        const std::string& symbol)
+    boost::function<Signature>& DynamicLibrary::getFunction(
+        boost::function<Signature>& function, const std::string& symbol)
     {
-        boost::function<Signature> function;
-
         if (isLoad()) {
-            DynamicLibrary::dlerror();
-            void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-            std::string errorMessage = DynamicLibrary::dlerror();
-            if ((address == NULL) && errorMessage.empty()) {
-                lastErrorMessage_ = errorMessage;
-                errorCode_ = LoaderError::SYMBOL_RESOLUTION_FAILED;
-            }
-            else {
-                using namespace boost;
-                typedef typename add_pointer<Signature>::type function_pointer;
-                function = reinterpret_cast<function_pointer>(address);
-                errorCode_.clear();
-            }
+            getFunction<Signature>(function, libraryHandle_, symbol);
         }
         else {
             lastErrorMessage_.clear();
@@ -232,28 +266,67 @@ namespace dl
         return function;
     }
 
+    template <typename Signature>
+    boost::function<Signature> DynamicLibrary::getFunction(
+        const std::string& symbol)
+    {
+        boost::function<Signature> function;
+        return getFunction<Signature>(function, symbol);
+    }
+
+    template <typename Signature>
+    boost::function<Signature>&
+    DynamicLibrary::getFunction(boost::function<Signature>& function,
+        void* handle, const std::string& symbol)
+    {
+        typename boost::add_pointer<Signature>::type address;
+        getAddress<Signature>(address, handle, symbol);
+        if (errorCode_ == std::errc::success) {
+            function = address;
+        }
+
+        return function;
+    }
+
     template <typename Type>
-    Type* DynamicLibrary::getVariable(void* handle, const std::string &symbol)
+    Type*& DynamicLibrary::getAddress(Type*& pointer,
+        const std::string& symbol)
     {
         if (isLoad()) {
-            DynamicLibrary::dlerror();
-            void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
-            std::string errorMessage = DynamicLibrary::dlerror();
-            if ((address == NULL) && errorMessage.empty()) {
-                lastErrorMessage_ = errorMessage;
-                errorCode_ = LoaderError::SYMBOL_RESOLUTION_FAILED;
-            }
-            else {
-                errorCode_.clear();
-            }
-
-            return reinterpret_cast<Type*>(address);
+            getAddress<Type>(pointer, libraryHandle_, symbol);
         }
         else {
             lastErrorMessage_.clear();
             errorCode_ = LoaderError::LIBRARY_NOT_LOADED;
-            return NULL;
         }
+
+        return pointer;
+    }
+
+    template <typename Type>
+    Type* DynamicLibrary::getAddress(const std::string& symbol)
+    {
+        Type* pointer;
+        return getAddress<Type>(pointer, symbol);
+    }
+
+    template <typename Type>
+    Type*& DynamicLibrary::getAddress(Type*& pointer, void* handle,
+        const std::string& symbol)
+    {
+        DynamicLibrary::dlerror();
+        void* address = DynamicLibrary::dlsym(handle, symbol.c_str());
+        std::string errorMessage = DynamicLibrary::dlerror();
+        if ((address == NULL) && errorMessage.empty()) {
+            lastErrorMessage_ = errorMessage;
+            errorCode_ = LoaderError::SYMBOL_RESOLUTION_FAILED;
+        }
+        else {
+            pointer = reinterpret_cast<Type*>(address);
+            errorCode_.clear();
+        }
+
+        return pointer;
     }
 
     //

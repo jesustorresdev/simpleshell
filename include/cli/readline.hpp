@@ -1,7 +1,7 @@
 /*
  * readline.hpp - Simple C++ wrapper around libreadline
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,17 +52,13 @@ namespace cli { namespace readline
             bool readLine(std::string& line,
                 const std::string& prompt = std::string()) const;
 
-            void addHistory(const std::string& line) const
-                { add_history_(line.c_str()); }
-
+            void addHistory(const std::string& line);
             void readHistory(const std::string& fileName);
             void writeHistory(const std::string& fileName);
-
-            void clearHistory() const
-                { clear_history_(); }
+            void clearHistory();
 
             //
-            // Readline library variable setters
+            // Readline library I/O streams setters
             //
 
             void setInStream(std::istream& in);
@@ -88,8 +84,6 @@ namespace cli { namespace readline
         public:
 
             Readline(bool useLibrary = true);
-            Readline(std::istream& in, std::ostream& out,
-                bool useLibrary = true);
 
             ~Readline();
 
@@ -100,7 +94,14 @@ namespace cli { namespace readline
                 { return readlineLibrary_; }
 
             //
-            // Methods for input history management
+            // I/O streams setters
+            //
+
+            void setInStream(std::istream& in);
+            void setOutStream(std::ostream& out);
+
+            //
+            // Methods for history management
             //
 
             void setHistoryFile(const std::string &fileName,
@@ -109,12 +110,10 @@ namespace cli { namespace readline
 
         private:
             boost::scoped_ptr<ReadlineLibrary> readlineLibrary_;
-            std::istream& in_;
-            std::ostream& out_;
+            std::istream* in_;
+            std::ostream* out_;
 
             std::string historyFileName_;
-
-            void init();
     };
 }}
 

@@ -98,16 +98,10 @@ namespace cli
             //
 
             CommandLineInterpreter(bool useReadline = true);
-            CommandLineInterpreter(std::istream& in, std::ostream& out,
-                bool useReadline = true);
             CommandLineInterpreter(boost::shared_ptr<ParserType> parser,
                 bool useReadline = true);
             CommandLineInterpreter(ParserType* parser,
                 bool useReadline = true);
-            CommandLineInterpreter(boost::shared_ptr<ParserType> parser,
-                std::istream& in, std::ostream& out, bool useReadline = true);
-            CommandLineInterpreter(ParserType* parser, std::istream& in,
-                std::ostream& out, bool useReadline = true);
 
             //
             // Methods to interpret command-line input
@@ -117,20 +111,32 @@ namespace cli
             bool interpretOneLine(std::string line);
 
             //
-            // Class attribute getters
+            // I/O streams getters & setters
             //
 
             std::istream& getInStream() const
-                { return in_; }
+                { return *in_; }
             std::ostream& getOutStream() const
-                { return out_; }
+                { return *out_; }
+            std::ostream& getErrStream() const
+                { return *err_; }
 
-            std::string getLastCommand() const
+            void setInStream(std::istream& in)
+                { in_ = &in; readLine_.setInStream(in); }
+            void setOutStream(std::ostream& out)
+                { out_ = &out; readLine_.setOutStream(out); }
+            void setErrStream(std::ostream& err)
+                { err_ = &err; }
+
+            void setIOStreams(std::istream& in, std::ostream& out,
+                std::ostream& err = std::cerr);
+
+            //
+            // Other attributes getters & setters
+            //
+
+            const std::string& getLastCommand() const
                 { return lastCommand_; }
-
-            //
-            // Class attribute setters
-            //
 
             void setIntroText(const std::string& intro)
                 { introText_ = intro; }
@@ -184,8 +190,9 @@ namespace cli
             virtual ParserType* parserFactory();
 
         private:
-            std::istream& in_;
-            std::ostream& out_;
+            std::istream* in_;
+            std::ostream* out_;
+            std::ostream* err_;
             readline::Readline readLine_;
 
             boost::shared_ptr<ParserType> lineParser_;
@@ -226,20 +233,10 @@ namespace cli
     template <template <typename> class Parser>
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
         bool useReadline)
-        : in_(std::cin),
-          out_(std::cout),
-          readLine_(std::cin, std::cout, useReadline),
-          lineParser_(parserFactory())
-    {}
-
-    template <template <typename> class Parser>
-    CommandLineInterpreter<Parser>::CommandLineInterpreter(
-        std::istream& in,
-        std::ostream& out,
-        bool useReadline)
-        : in_(in),
-          out_(out),
-          readLine_(in, out, useReadline),
+        : in_(&std::cin),
+          out_(&std::cout),
+          err_(&std::cerr),
+          readLine_(useReadline),
           lineParser_(parserFactory())
     {}
 
@@ -247,9 +244,10 @@ namespace cli
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
         boost::shared_ptr<ParserType> parser,
         bool useReadline)
-        : in_(std::cin),
-          out_(std::cout),
-          readLine_(std::cin, std::cout, useReadline),
+        : in_(&std::cin),
+          out_(&std::cout),
+          err_(&std::cerr),
+          readLine_(useReadline),
           lineParser_(parser)
     {}
 
@@ -257,33 +255,10 @@ namespace cli
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
         ParserType* parser,
         bool useReadline)
-        : in_(std::cin),
-          out_(std::cout),
-          readLine_(std::cin, std::cout, useReadline),
-          lineParser_(parser, noOpDelete())
-    {}
-
-    template <template <typename> class Parser>
-    CommandLineInterpreter<Parser>::CommandLineInterpreter(
-        boost::shared_ptr<ParserType> parser,
-        std::istream& in,
-        std::ostream& out,
-        bool useReadline)
-        : in_(in),
-          out_(out),
-          readLine_(in, out, useReadline),
-          lineParser_(parser)
-    {}
-
-    template <template <typename> class Parser>
-    CommandLineInterpreter<Parser>::CommandLineInterpreter(
-        ParserType* parser,
-        std::istream& in,
-        std::ostream& out,
-        bool useReadline)
-        : in_(in),
-          out_(out),
-          readLine_(in, out, useReadline),
+        : in_(&std::cin),
+          out_(&std::cout),
+          err_(&std::cerr),
+          readLine_(useReadline),
           lineParser_(parser, noOpDelete())
     {}
 
@@ -299,15 +274,15 @@ namespace cli
     {
         preLoop();
 
-        if (internals::isStreamTty(in_) && internals::isStreamTty(out_)) {
-            if (! introText_.empty()) {
-                out_ << introText_ << std::endl;
-            }
+        std::string promptText;
+        if (internals::isStreamTty(*in_) && internals::isStreamTty(*out_)) {
+            *out_ << introText_ << std::endl;
+            promptText = promptText_;
         }
 
         std::string line;
         while (true) {
-            bool isOk = readLine_.readLine(line, promptText_);
+            bool isOk = readLine_.readLine(line, promptText);
             if (! isOk)
                 break;
             bool isFinished = interpretOneLine(line);
@@ -404,6 +379,15 @@ namespace cli
         if (! postLoopCallback_.empty()) {
             postLoopCallback_();
         }
+    }
+
+    template <template <typename> class Parser>
+    void CommandLineInterpreter<Parser>::setIOStreams(std::istream& in,
+        std::ostream& out, std::ostream& err)
+    {
+        setInStream(in);
+        setOutStream(out);
+        setErrStream(err);
     }
 
     template <template <typename> class Parser>
