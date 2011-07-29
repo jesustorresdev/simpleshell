@@ -27,25 +27,12 @@ namespace cli { namespace exception
     // Class UnknownCallbackException
     //
 
-    struct UnknownCallbackException : public std::exception
+    struct UnknownCallbackException : public std::logic_error
     {
 
         UnknownCallbackException(const std::string& callbackName)
-            : exception()
-        {
-            callbackName_ += "Unknown callback function name: ";
-            callbackName_ += callbackName;
-        }
-
-        ~UnknownCallbackException() throw() {}
-
-        virtual const char* what() const throw()
-        {
-            return callbackName_.c_str();
-        }
-
-        private:
-            std::string callbackName_;
+            : logic_error("Unknown callback function name: " + callbackName)
+        {}
     };
 }}
 
