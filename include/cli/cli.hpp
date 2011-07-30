@@ -19,10 +19,12 @@
 #ifndef CLI_HPP_
 #define CLI_HPP_
 
+#include <cerrno>
 #include <iostream>
 #include <map>
 #include <string>
 
+#include <boost/exception/detail/is_output_streamable.hpp>
 #include <boost/function_types/is_nonmember_callable_builtin.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/result_type.hpp>
@@ -221,6 +223,20 @@ namespace cli
             DoCommandCallbacks doCommandCallbacks_;
 
             //
+            // Print a parser error only if it is possible
+            //
+
+            template <typename Error>
+            typename boost::enable_if<
+                boost::is_output_streamable<Error> >::type
+            printParserError(Error const& error);
+
+            template <typename Error>
+            typename boost::disable_if<
+                boost::is_output_streamable<Error> >::type
+            printParserError(Error const& error) {}
+
+            //
             // No-op memory deallocator
             //
 
@@ -361,8 +377,11 @@ namespace cli
     bool CommandLineInterpreter<Parser>::parserError(
         ParserErrorType const& error, const std::string& line)
     {
-        return parserErrorCallback_.empty() ?
-            false : parserErrorCallback_(error, line);
+        if (parserErrorCallback_.empty()) {
+            printParserError(error);
+            return false;
+        }
+        return parserErrorCallback_(error, line);
     }
 
     template <template <typename> class Parser>
@@ -415,6 +434,17 @@ namespace cli
         CLI_CALLBACK_SIGNATURE_ASSERT(Callback, Functor);
         callback::SetCallbackImpl<Callback>::setCallback(*this, function,
             argument);
+    }
+
+    template <template <typename> class Parser>
+    template <typename Error>
+    typename boost::enable_if<boost::is_output_streamable<Error> >::type
+    CommandLineInterpreter<Parser>::printParserError(Error const& error)
+    {
+        *err_ << ::program_invocation_short_name
+              << ": "
+              << error
+              << std::endl;
     }
 }
 

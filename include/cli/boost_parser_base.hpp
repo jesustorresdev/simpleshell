@@ -19,8 +19,12 @@
 #ifndef BOOST_PARSER_BASE_HPP_
 #define BOOST_PARSER_BASE_HPP_
 
+#include <stdexcept>
+
 #include <boost/fusion/include/vector.hpp>
 #include <boost/spirit/include/qi.hpp>
+
+#define translate(str) str  // TODO: Use Boost.Locale when available
 
 namespace cli { namespace parser
 {
@@ -31,7 +35,75 @@ namespace cli { namespace parser
     using fusion::unused;
 
     //
-    // class BoostParserBase
+    // Class BoostParserError
+    //
+    // Type used to return parser errors to the interpreter.
+    //
+
+    template <typename Iterator>
+    struct BoostParserError : public std::runtime_error
+    {
+        //
+        // This attributes are only available if containsDetails() returns
+        // true. For a description of them, see qi::on_error (error handling)
+        // in Boost.Spirit documentation.
+        //
+
+        Iterator first;
+        Iterator last;
+        Iterator error;
+        boost::spirit::info what_;
+
+        //
+        // Class constructors
+        //
+
+        BoostParserError(bool fail = false)
+            : runtime_error(""), what_(""), parserFail_(fail) {}
+
+        BoostParserError(const std::string& what)
+            : runtime_error(what), parserFail_(true) {}
+
+        BoostParserError(const std::string& what, Iterator const& first,
+            Iterator const& last, Iterator const& error,
+            const boost::spirit::info& info)
+            : runtime_error(what), first(first), last(last),
+              error(error), what_(info), parserFail_(true) {}
+
+        virtual ~BoostParserError() throw() {}
+
+        //
+        // The interpreter requires the type can be convertible to bool
+        //
+
+        operator bool()
+            { return parserFail_; }
+
+        bool containsDetails()
+            { return containsDetails_; }
+
+        private:
+            bool parserFail_;
+            bool containsDetails_;
+    };
+
+    //
+    // Overload insertion operator (<<) for class BoostParserError.
+    // It is use by the interpreter to show a message when parser fail.
+    //
+
+    template <typename CharT, typename Traits, typename Iterator>
+    std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& out,
+        const BoostParserError<Iterator>& error)
+    {
+        return out << error.what();
+    }
+
+    //
+    // Class BoostParserBase
+    //
+    // Base class for parsers based on Boost.Spirit.
     //
 
     template <typename Command, typename Details,
@@ -46,7 +118,7 @@ namespace cli { namespace parser
         typedef typename Command::iterator IteratorType;
         typedef typename qi::grammar<IteratorType,
             fusion::vector<Command&, Details&>(), T1, T2, T3> ParserType;
-        typedef bool ParserErrorType;
+        typedef BoostParserError<IteratorType> ParserErrorType;
 
         //
         // Define the types needed to replace qi::grammar by BoostParserBase
@@ -79,8 +151,26 @@ namespace cli { namespace parser
                 // Passing the attributes 'command' and 'details' to the parser
                 // forces that every valid grammar must to return a two
                 // references Sequence.
-                return !qi::phrase_parse(begin, end, *this, skipper_type(),
-                    command, details);
+                try {
+                    bool success = qi::phrase_parse(begin, end, *this,
+                        skipper_type(), command, details);
+                    if (success) {
+                        return ParserErrorType();
+                    }
+                    else {
+                        return ParserErrorType(translate("syntax error"));
+                    }
+                }
+                catch (ParserErrorType error) {
+                    return error;
+                }
+            }
+
+            static void throwParserError(const std::string& what,
+                IteratorType const& first, IteratorType const& last,
+                IteratorType const& error, const boost::spirit::info& info)
+            {
+                throw ParserErrorType(what, first, last, error, info);
             }
 
             //

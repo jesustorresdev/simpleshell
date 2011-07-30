@@ -19,7 +19,6 @@
 #ifndef SHELL_PARSER_HPP_
 #define SHELL_PARSER_HPP_
 
-#include <cerrno>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -32,9 +31,7 @@
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
@@ -93,7 +90,7 @@ namespace cli { namespace parser { namespace shellparser
     };
 
     //
-    // Overload insertion operator (<<) for struct CommandDetails.
+    // Overload insertion operator (<<) for class CommandDetails.
     // It is required to debug the parser rules.
     //
 
@@ -195,14 +192,11 @@ namespace cli { namespace parser { namespace shellparser
             using phoenix::at_c;
             using phoenix::begin;
             using phoenix::bind;
-            using phoenix::construct;
             using phoenix::empty;
             using phoenix::end;
-            using phoenix::if_else;
             using phoenix::insert;
             using phoenix::push_back;
             using phoenix::size;
-            using phoenix::val;
 
             eol = eoi;
             neol = !eoi;
@@ -281,19 +275,7 @@ namespace cli { namespace parser { namespace shellparser
             neol.name(translate("more characters"));
 
             on_error<fail>(
-                start,
-                std::cerr
-                    << val(::program_invocation_short_name)
-                    << val(": ")
-                    << val(translate("parse error, expecting"))
-                    << val(" ")
-                    << _4
-                    << val(" ")
-                    << val(translate("at"))
-                    << val(": ")
-                    << if_else(_3 == _2, val(translate("<end-of-line>")),
-                        construct<std::string>(_3, _2))
-                    << std::endl
+                start, bind(&Type::throwParserError, _1, _2, _3, _4)
             );
 
 //            BOOST_SPIRIT_DEBUG_NODE(name);
@@ -398,6 +380,10 @@ namespace cli { namespace parser { namespace shellparser
 
             static std::string stringsJoin(const std::vector<std::string>& v)
                 { return boost::algorithm::join(v, std::string(1, ' ')); }
+
+            static void throwParserError(Iterator const& first,
+                Iterator const& last, Iterator const& error,
+                const boost::spirit::info& info);
     };
 
     template <typename Iterator>
@@ -435,6 +421,20 @@ namespace cli { namespace parser { namespace shellparser
         }
 
         return glob;
+    }
+
+    template <typename Iterator>
+    void ShellParser<Iterator>::throwParserError(Iterator const& first,
+        Iterator const& last, Iterator const& error,
+        const boost::spirit::info& info)
+    {
+        std::string what;
+        what += translate("syntax error, expecting");
+        what += " " + info.tag + " " + translate("at") + ": ";
+        what += (error == last) ? translate("<end-of-line>")
+            : std::string(error, last);
+
+        base_type::throwParserError(what, first, last, error, info);
     }
 }}}
 

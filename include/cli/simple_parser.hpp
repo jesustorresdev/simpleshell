@@ -20,17 +20,16 @@
 #ifndef SIMPLE_PARSER_HPP_
 #define SIMPLE_PARSER_HPP_
 
-#include <cerrno>
 #include <iostream>
 #include <string>
 #include <vector>
 
 //#define BOOST_SPIRIT_DEBUG
 
+#include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
@@ -75,8 +74,7 @@ namespace cli { namespace parser { namespace simpleparser
             using iso8859_1::space;
             using phoenix::at;
             using phoenix::at_c;
-            using phoenix::construct;
-            using phoenix::val;
+            using phoenix::bind;
 
             eol = eoi;
             character %= char_;
@@ -92,19 +90,7 @@ namespace cli { namespace parser { namespace simpleparser
             eol.name(translate("end-of-line"));
 
             on_error<fail>(
-                start,
-                std::cerr
-                    << val(::program_invocation_short_name)
-                    << val(": ")
-                    << val(translate("parse error, expecting"))
-                    << val(" ")
-                    << _4
-                    << val(" ")
-                    << val(translate("at"))
-                    << val(": ")
-                    << if_else(_3 == _2, val(translate("<end-of-line>")),
-                        construct<std::string>(_3, _2))
-                    << std::endl
+                start, bind(&Type::throwParserError, _1, _2, _3, _4)
             );
 
 //            BOOST_SPIRIT_DEBUG_NODE(word);
@@ -123,7 +109,27 @@ namespace cli { namespace parser { namespace simpleparser
             iso8859_1::space_type> doubleQuotedString;
         qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
         qi::rule<Iterator, sig_type, iso8859_1::space_type> start;
+
+        private:
+
+            static void throwParserError(Iterator const& first,
+                Iterator const& last, Iterator const& error,
+                const boost::spirit::info& info);
     };
+
+    template <typename Iterator>
+    void SimpleParser<Iterator>::throwParserError(Iterator const& first,
+        Iterator const& last, Iterator const& error,
+        const boost::spirit::info& info)
+    {
+        std::string what;
+        what += translate("syntax error, expecting");
+        what += " " + info.tag + " " + translate("at") + ": ";
+        what += (error == last) ? translate("<end-of-line>")
+            : std::string(error, last);
+
+        base_type::throwParserError(what, first, last, error, info);
+    }
 }}}
 
 namespace cli { namespace parser

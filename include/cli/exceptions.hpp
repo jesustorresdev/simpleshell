@@ -19,7 +19,7 @@
 #ifndef EXCEPTIONS_HPP_
 #define EXCEPTIONS_HPP_
 
-#include <exception>
+#include <stdexcept>
 
 namespace cli { namespace exception
 {
@@ -31,8 +31,9 @@ namespace cli { namespace exception
     {
 
         UnknownCallbackException(const std::string& callbackName)
-            : logic_error("Unknown callback function name: " + callbackName)
-        {}
+            : logic_error("Unknown callback function name: " + callbackName) {}
+
+        ~UnknownCallbackException() throw() {}
     };
 }}
 
