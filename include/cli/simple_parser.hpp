@@ -30,6 +30,7 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
@@ -52,13 +53,9 @@ namespace cli { namespace parser { namespace simpleparser
     // exceptions when finds 8-bit characters.
     //
 
-    template <typename Iterator>
     struct SimpleParser
         : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
     {
-        typedef SimpleParser<Iterator> Type;
-        typedef typename Type::sig_type sig_type;
-
         SimpleParser() : SimpleParser::base_type(start)
         {
             using qi::_1;
@@ -90,7 +87,7 @@ namespace cli { namespace parser { namespace simpleparser
             eol.name(translate("end-of-line"));
 
             on_error<fail>(
-                start, bind(&Type::throwParserError, _1, _2, _3, _4)
+                start, bind(&SimpleParser::throwParserError, _1, _2, _3, _4)
             );
 
 //            BOOST_SPIRIT_DEBUG_NODE(word);
@@ -100,26 +97,27 @@ namespace cli { namespace parser { namespace simpleparser
             BOOST_SPIRIT_DEBUG_NODE(start);
         }
 
-        qi::rule<Iterator> eol;
-        qi::rule<Iterator, char()> character;
-        qi::rule<Iterator, char()> escape;
-        qi::rule<Iterator, std::string(), iso8859_1::space_type> word;
-        qi::rule<Iterator, std::string(), iso8859_1::space_type> quotedString;
-        qi::rule<Iterator, std::string(),
+        qi::rule<IteratorType> eol;
+        qi::rule<IteratorType, char()> character;
+        qi::rule<IteratorType, char()> escape;
+        qi::rule<IteratorType, std::string(), iso8859_1::space_type> word;
+        qi::rule<IteratorType, std::string(),
+            iso8859_1::space_type> quotedString;
+        qi::rule<IteratorType, std::string(),
             iso8859_1::space_type> doubleQuotedString;
-        qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
-        qi::rule<Iterator, sig_type, iso8859_1::space_type> start;
+        qi::rule<IteratorType, std::string(), iso8859_1::space_type> argument;
+        qi::rule<IteratorType, SimpleParser::sig_type,
+            iso8859_1::space_type> start;
 
         private:
 
-            static void throwParserError(Iterator const& first,
-                Iterator const& last, Iterator const& error,
+            static void throwParserError(IteratorType const& first,
+                IteratorType const& last, IteratorType const& error,
                 const boost::spirit::info& info);
     };
 
-    template <typename Iterator>
-    void SimpleParser<Iterator>::throwParserError(Iterator const& first,
-        Iterator const& last, Iterator const& error,
+    void SimpleParser::throwParserError(IteratorType const& first,
+        IteratorType const& last, IteratorType const& error,
         const boost::spirit::info& info)
     {
         std::string what;

@@ -31,7 +31,7 @@
 #include <cli/exceptions.hpp>
 
 //
-// Macro CLI_DECLARE_CALLBACKS
+// Macro CLI_DECLARE_CALLBACKS & CLI_DECLARE_CALLBACKS_TPL
 //
 // Helps to add the support for callbacks to a class declaration.
 //
@@ -44,6 +44,13 @@
 #define CLI_DECLARE_CALLBACKS_FILLER_1_END
 
 #define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)     \
+    typedef cli::callback::                                         \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type    \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);               \
+    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>   \
+        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);
+
+#define CLI_DECLARE_CALLBACK_MEMBER_TPL(r, TYPE, DECLARATION_TUPLE) \
     typedef typename cli::callback::                                \
         BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type    \
         BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);               \
@@ -59,16 +66,28 @@
     template <template <typename> class Callback>                   \
     friend class cli::callback::SetCallbackImpl;
 
+#define CLI_DECLARE_CALLBACKS_TPL(TYPE, DECLARATIONS_SEQ)           \
+    BOOST_PP_SEQ_FOR_EACH(                                          \
+        CLI_DECLARE_CALLBACK_MEMBER_TPL,                            \
+        TYPE,                                                       \
+        BOOST_PP_CAT(                                               \
+            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END)) \
+    template <template <typename> class Callback>                   \
+    friend class cli::callback::SetCallbackImpl;
+
 //
-// Macro CLI_CALLBACK_SIGNATURE_ASSERT
+// Macro CLI_CALLBACK_SIGNATURE_ASSERT & CLI_CALLBACK_SIGNATURE_ASSERT_TPL
 //
 // Tests if the function signature of FUNCTOR match the expected by CALLBACK.
 //
 
 #define CLI_CALLBACK_SIGNATURE_ASSERT(CALLBACK, FUNCTOR)                \
     BOOST_MPL_ASSERT((boost::is_convertible<FUNCTOR,                    \
-        boost::function<typename CALLBACK<Type>::Type> >))
+        boost::function<CALLBACK<Type>::Type> >))
 
+#define CLI_CALLBACK_SIGNATURE_ASSERT_TPL(CALLBACK, FUNCTOR)            \
+    BOOST_MPL_ASSERT((boost::is_convertible<FUNCTOR,                    \
+        boost::function<typename CALLBACK<Type>::Type> >))
 
 namespace cli { namespace callback
 {

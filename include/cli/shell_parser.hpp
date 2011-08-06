@@ -32,6 +32,7 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/include/qi.hpp>
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
@@ -163,13 +164,9 @@ namespace cli { namespace parser { namespace shellparser
     // exceptions when finds 8-bit characters.
     //
 
-    template <typename Iterator>
     struct ShellParser
         : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
     {
-        typedef ShellParser<Iterator> Type;
-        typedef typename Type::sig_type sig_type;
-
         ShellParser() : ShellParser::base_type(start)
         {
             using qi::_1;
@@ -210,14 +207,14 @@ namespace cli { namespace parser { namespace shellparser
                 eps[_a = false] >>
                 dereference >> (
                     -lit('{')[_a = true] >
-                    name[_val = bind(&Type::variableLookup, *this, _1)]
+                    name[_val = bind(&ShellParser::variableLookup, *this, _1)]
                 ) >> ((eps(_a) > '}') | eps(!_a));
 
             quotedString %= '\'' >> *(char_ - '\'') > '\'';
             doubleQuotedString = '"' >> *(
                 variable                    [_val += _1] |
                 (
-                    char_('\'')             [push_back(_val, _1)] >>
+                    char_('\'')             [push_back(_val, _1)]  >>
                     *((char_ - '\'' - '"')  [push_back(_val, _1)]) >>
                     char_('\'')             [push_back(_val, _1)]
                 ) |
@@ -225,16 +222,21 @@ namespace cli { namespace parser { namespace shellparser
             ) > '"';
 
             word = +(
-                variable            [_val += _1] |
-                quotedString        [_val += bind(&Type::globEscape, _1)] |
-                doubleQuotedString  [_val += bind(&Type::globEscape, _1)] |
+                variable                    [_val += _1]          |
+                quotedString
+                    [_val += bind(&ShellParser::globEscape, _1)]  |
+                doubleQuotedString
+                    [_val += bind(&ShellParser::globEscape, _1)]  |
                 escape                      [push_back(_val, _1)] |
                 (char_ - space - special)   [push_back(_val, _1)]
             );
 
             expandedWord = word
-                [_val = bind(&Type::pathnameExpansion, *this, _1)];
-            variableValue = expandedWord[_val = bind(&Type::stringsJoin, _1)];
+                [_val = bind(&ShellParser::pathnameExpansion, *this, _1)];
+
+            variableValue = expandedWord
+                [_val = bind(&ShellParser::stringsJoin, _1)];
+
             unambiguousRedirection = eps(_r1);
             redirectionArgument = (
                 (
@@ -262,8 +264,7 @@ namespace cli { namespace parser { namespace shellparser
             );
             start = command [
                  at_c<1>(_val) = _1,
-                 at_c<0>(_val) =
-                     bind(&CommandDetails::getCommandName, _1)
+                 at_c<0>(_val) = bind(&CommandDetails::getCommandName, _1)
             ];
 
             character.name(translate("character"));
@@ -275,7 +276,7 @@ namespace cli { namespace parser { namespace shellparser
             neol.name(translate("more characters"));
 
             on_error<fail>(
-                start, bind(&Type::throwParserError, _1, _2, _3, _4)
+                start, bind(&ShellParser::throwParserError, _1, _2, _3, _4)
             );
 
 //            BOOST_SPIRIT_DEBUG_NODE(name);
@@ -331,27 +332,29 @@ namespace cli { namespace parser { namespace shellparser
             }
         } pipe;
 
-        qi::rule<Iterator> eol;
-        qi::rule<Iterator> neol;
-        qi::rule<Iterator, char()> character;
-        qi::rule<Iterator, char()> dereference;
-        qi::rule<Iterator, char()> special;
-        qi::rule<Iterator, char()> escape;
-        qi::rule<Iterator, std::string()> name;
-        qi::rule<Iterator, std::string(), qi::locals<bool> > variable;
-        qi::rule<Iterator, std::string()> quotedString;
-        qi::rule<Iterator, std::string()> doubleQuotedString;
-        qi::rule<Iterator, std::string()> word;
-        qi::rule<Iterator, std::vector<std::string>()> expandedWord;
-        qi::rule<Iterator, std::string()> variableValue;
-        qi::rule<Iterator, void(bool)> unambiguousRedirection;
-        qi::rule<Iterator, std::string(),
+        qi::rule<IteratorType> eol;
+        qi::rule<IteratorType> neol;
+        qi::rule<IteratorType, char()> character;
+        qi::rule<IteratorType, char()> dereference;
+        qi::rule<IteratorType, char()> special;
+        qi::rule<IteratorType, char()> escape;
+        qi::rule<IteratorType, std::string()> name;
+        qi::rule<IteratorType, std::string(), qi::locals<bool> > variable;
+        qi::rule<IteratorType, std::string()> quotedString;
+        qi::rule<IteratorType, std::string()> doubleQuotedString;
+        qi::rule<IteratorType, std::string()> word;
+        qi::rule<IteratorType, std::vector<std::string>()> expandedWord;
+        qi::rule<IteratorType, std::string()> variableValue;
+        qi::rule<IteratorType, void(bool)> unambiguousRedirection;
+        qi::rule<IteratorType, std::string(),
             qi::locals<int> > redirectionArgument;
-        qi::rule<Iterator, VariableAssignment()> assignment;
-        qi::rule<Iterator, StdioRedirection(),
+        qi::rule<IteratorType, VariableAssignment()> assignment;
+        qi::rule<IteratorType, StdioRedirection(),
             iso8859_1::space_type> redirection;
-        qi::rule<Iterator, CommandDetails(), iso8859_1::space_type> command;
-        qi::rule<Iterator, sig_type, iso8859_1::space_type> start;
+        qi::rule<IteratorType, CommandDetails(),
+            iso8859_1::space_type> command;
+        qi::rule<IteratorType, ShellParser::sig_type,
+            iso8859_1::space_type> start;
 
         protected:
 
@@ -366,7 +369,7 @@ namespace cli { namespace parser { namespace shellparser
         private:
 
             CLI_DECLARE_CALLBACKS(
-                Type,
+                ShellParser,
                 (VariableLookupCallback, variableLookupCallback_)
                 (PathnameExpansionCallback, pathnameExpansionCallback_)
             )
@@ -381,20 +384,18 @@ namespace cli { namespace parser { namespace shellparser
             static std::string stringsJoin(const std::vector<std::string>& v)
                 { return boost::algorithm::join(v, std::string(1, ' ')); }
 
-            static void throwParserError(Iterator const& first,
-                Iterator const& last, Iterator const& error,
+            static void throwParserError(IteratorType const& first,
+                IteratorType const& last, IteratorType const& error,
                 const boost::spirit::info& info);
     };
 
-    template <typename Iterator>
-    std::string ShellParser<Iterator>::variableLookup(const std::string& name)
+    std::string ShellParser::variableLookup(const std::string& name)
     {
         return variableLookupCallback_.empty() ?
             std::string() : variableLookupCallback_(name);
     }
 
-    template <typename Iterator>
-    std::vector<std::string> ShellParser<Iterator>::pathnameExpansion(
+    std::vector<std::string> ShellParser::pathnameExpansion(
         const std::string& pattern)
     {
         if (! pathnameExpansionCallback_.empty()) {
@@ -406,7 +407,7 @@ namespace cli { namespace parser { namespace shellparser
         Glob glob(pattern, Glob::EXPAND_BRACE_EXPRESSIONS |
             Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE_WITH_CHECK);
 
-        typename Glob::ErrorsType errors = glob.getErrors();
+        Glob::ErrorsType errors = glob.getErrors();
         for (Glob::ErrorsType::const_iterator iter = errors.begin();
             iter < errors.end(); ++iter)
         {
@@ -423,9 +424,8 @@ namespace cli { namespace parser { namespace shellparser
         return glob;
     }
 
-    template <typename Iterator>
-    void ShellParser<Iterator>::throwParserError(Iterator const& first,
-        Iterator const& last, Iterator const& error,
+    void ShellParser::throwParserError(IteratorType const& first,
+        IteratorType const& last, IteratorType const& error,
         const boost::spirit::info& info)
     {
         std::string what;

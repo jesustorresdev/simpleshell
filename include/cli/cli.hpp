@@ -25,13 +25,17 @@
 #include <string>
 
 #include <boost/exception/detail/is_output_streamable.hpp>
+#include <boost/function.hpp>
+#include <boost/function_types/function_arity.hpp>
 #include <boost/function_types/is_nonmember_callable_builtin.hpp>
+#include <boost/function_types/is_callable_builtin.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/result_type.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/int.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/utility.hpp>
 
@@ -47,7 +51,7 @@ namespace cli
     // Class CommandLineInterpreter
     //
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     class CommandLineInterpreter
     {
         public:
@@ -58,8 +62,12 @@ namespace cli
             // function object concepts.
             //
 
-            template <typename T, typename Enabled = false_type>
-            struct ParserTraits
+            template <typename T, typename Enabled = void>
+            struct ParserTraits {};
+
+            template <typename T>
+            struct ParserTraits<T, typename boost::disable_if<
+                boost::function_types::is_nonmember_callable_builtin<T> >::type>
             {
                 typedef typename T::arg4_type CommandDetailsType;
                 typedef typename T::result_type ParserErrorType;
@@ -74,36 +82,37 @@ namespace cli
             struct ParserTraits<T, typename boost::enable_if<
                 boost::function_types::is_nonmember_callable_builtin<T> >::type>
             {
-                // TODO: Check this code when the interpreter supports to
-                // use a function or function pointer as parser.
+                BOOST_STATIC_ASSERT((
+                    boost::function_types::function_arity<T>::value == 4));
+
                 typedef typename boost::mpl::at<
                     typename boost::function_types::parameter_types<T>::type,
-                    boost::mpl::int_<4>
+                    boost::mpl::int_<3>
                 >::type CommandDetailsType;
                 typedef typename boost::function_types::result_type<T>::type
                     ParserErrorType;
             };
 
             //
-            // Define types related to Parser type
+            // Define types related to parser type
             //
 
-            typedef Parser<std::string::iterator> ParserType;
             typedef typename boost::remove_reference<
-                typename ParserTraits<ParserType>::CommandDetailsType
+                typename ParserTraits<Parser>::CommandDetailsType
             >::type CommandDetailsType;
-            typedef typename ParserTraits<ParserType>::ParserErrorType
+            typedef typename ParserTraits<Parser>::ParserErrorType
                 ParserErrorType;
+            typedef ParserErrorType (ParserSignature)(std::string::iterator&,
+                std::string::iterator, std::string&, CommandDetailsType&);
 
             //
             // Class constructors
             //
 
             CommandLineInterpreter(bool useReadline = true);
-            CommandLineInterpreter(boost::shared_ptr<ParserType> parser,
+            CommandLineInterpreter(boost::shared_ptr<Parser> parser,
                 bool useReadline = true);
-            CommandLineInterpreter(ParserType* parser,
-                bool useReadline = true);
+            CommandLineInterpreter(Parser parser, bool useReadline = true);
 
             //
             // Methods to interpret command-line input
@@ -142,10 +151,8 @@ namespace cli
 
             void setIntroText(const std::string& intro)
                 { introText_ = intro; }
-
             void setPromptText(const std::string& prompt)
                 { promptText_ = prompt; }
-
             void setHistoryFile(const std::string& fileName);
 
             //
@@ -186,10 +193,18 @@ namespace cli
             virtual void postLoop();
 
             //
-            // Command-line parser factory
+            // Method to print parser errors, if possible
             //
 
-            virtual ParserType* parserFactory();
+            template <typename Error>
+            typename boost::enable_if<
+                boost::is_output_streamable<Error> >::type
+            printParserError(Error const& error);
+
+            template <typename Error>
+            typename boost::disable_if<
+                boost::is_output_streamable<Error> >::type
+            printParserError(Error const& error) {}
 
         private:
             std::istream* in_;
@@ -197,7 +212,8 @@ namespace cli
             std::ostream* err_;
             readline::Readline readLine_;
 
-            boost::shared_ptr<ParserType> lineParser_;
+            boost::shared_ptr<Parser> parserObject_;
+            boost::function<ParserSignature> parserFunction_;
 
             std::string introText_;
             std::string promptText_;
@@ -207,7 +223,7 @@ namespace cli
             // Callback function objects
             //
 
-            CLI_DECLARE_CALLBACKS(
+            CLI_DECLARE_CALLBACKS_TPL(
                 Type,
                 (DoCommandCallback, defaultDoCommandCallback_)
                 (EmptyLineCallback, emptyLineCallback_)
@@ -223,69 +239,57 @@ namespace cli
             DoCommandCallbacks doCommandCallbacks_;
 
             //
-            // Print a parser error only if it is possible
+            // Parser handling
             //
 
-            template <typename Error>
+            template <typename P>
             typename boost::enable_if<
-                boost::is_output_streamable<Error> >::type
-            printParserError(Error const& error);
+                boost::function_types::is_callable_builtin<P>, P*>::type
+            parserFactory()
+                { return NULL; }
 
-            template <typename Error>
+            template <typename P>
             typename boost::disable_if<
-                boost::is_output_streamable<Error> >::type
-            printParserError(Error const& error) {}
+                boost::function_types::is_callable_builtin<P>, P*>::type
+            parserFactory()
+                { return new P; }
 
-            //
-            // No-op memory deallocator
-            //
-
-            struct noOpDelete
-            {
-                void operator()(ParserType*) {}
-            };
+            ParserErrorType parse(std::string::iterator& begin,
+                std::string::iterator end, std::string& command,
+                CommandDetailsType& details);
     };
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
         bool useReadline)
         : in_(&std::cin),
           out_(&std::cout),
           err_(&std::cerr),
           readLine_(useReadline),
-          lineParser_(parserFactory())
+          parserObject_(parserFactory<Parser>())
     {}
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
-        boost::shared_ptr<ParserType> parser,
-        bool useReadline)
+        boost::shared_ptr<Parser> parser, bool useReadline)
         : in_(&std::cin),
           out_(&std::cout),
           err_(&std::cerr),
           readLine_(useReadline),
-          lineParser_(parser)
+          parserObject_(parser)
     {}
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     CommandLineInterpreter<Parser>::CommandLineInterpreter(
-        ParserType* parser,
-        bool useReadline)
+        Parser parser, bool useReadline)
         : in_(&std::cin),
           out_(&std::cout),
           err_(&std::cerr),
           readLine_(useReadline),
-          lineParser_(parser, noOpDelete())
+          parserFunction_(parser)
     {}
 
-    template <template <typename> class Parser>
-    typename CommandLineInterpreter<Parser>::ParserType*
-    CommandLineInterpreter<Parser>::parserFactory()
-    {
-        return new ParserType;
-    }
-
-    template <template <typename> class Parser>
+    template <typename Parser>
     void CommandLineInterpreter<Parser>::loop()
     {
         preLoop();
@@ -309,7 +313,7 @@ namespace cli
         postLoop();
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     bool CommandLineInterpreter<Parser>::interpretOneLine(std::string line)
     {
         preDoCommand(line);
@@ -326,8 +330,7 @@ namespace cli
         while (begin != end) {
             std::string command;
             CommandDetailsType details;
-            ParserErrorType error =
-                (*lineParser_)(begin, end, command, details);
+            ParserErrorType error = parse(begin, end, command, details);
 
             bool isFinished;
             if (error) {
@@ -344,7 +347,7 @@ namespace cli
         return false;
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     bool CommandLineInterpreter<Parser>::doCommand(const std::string& command,
         CommandDetailsType const& details)
     {
@@ -359,21 +362,21 @@ namespace cli
         }
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     bool CommandLineInterpreter<Parser>::emptyLine()
     {
         return emptyLineCallback_.empty() ? false : emptyLineCallback_();
     }
 
-    template <template <typename> class Parser>
-    bool CommandLineInterpreter<Parser>::postDoCommand(
-        bool isFinished, const std::string& line)
+    template <typename Parser>
+    bool CommandLineInterpreter<Parser>::postDoCommand(bool isFinished,
+        const std::string& line)
     {
         return postDoCommandCallback_.empty() ?
             isFinished : postDoCommandCallback_(isFinished, line);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     bool CommandLineInterpreter<Parser>::parserError(
         ParserErrorType const& error, const std::string& line)
     {
@@ -384,7 +387,7 @@ namespace cli
         return parserErrorCallback_(error, line);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     void CommandLineInterpreter<Parser>::preLoop()
     {
         if (! preLoopCallback_.empty()) {
@@ -392,7 +395,7 @@ namespace cli
         }
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     void CommandLineInterpreter<Parser>::postLoop()
     {
         if (! postLoopCallback_.empty()) {
@@ -400,7 +403,7 @@ namespace cli
         }
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     void CommandLineInterpreter<Parser>::setIOStreams(std::istream& in,
         std::ostream& out, std::ostream& err)
     {
@@ -409,7 +412,7 @@ namespace cli
         setErrStream(err);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     void CommandLineInterpreter<Parser>::setHistoryFile(
         const std::string& fileName)
     {
@@ -417,26 +420,26 @@ namespace cli
         readLine_.setHistoryFile(fileName);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     template <template <typename> class Callback, typename Functor>
     void CommandLineInterpreter<Parser>::setCallback(Functor function)
     {
-        CLI_CALLBACK_SIGNATURE_ASSERT(Callback, Functor);
+        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
         callback::SetCallbackImpl<Callback>::setCallback(*this, function);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     template <template <typename> class Callback, typename Functor,
         typename Argument>
     void CommandLineInterpreter<Parser>::setCallback(Functor function,
         Argument argument)
     {
-        CLI_CALLBACK_SIGNATURE_ASSERT(Callback, Functor);
+        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
         callback::SetCallbackImpl<Callback>::setCallback(*this, function,
             argument);
     }
 
-    template <template <typename> class Parser>
+    template <typename Parser>
     template <typename Error>
     typename boost::enable_if<boost::is_output_streamable<Error> >::type
     CommandLineInterpreter<Parser>::printParserError(Error const& error)
@@ -445,6 +448,20 @@ namespace cli
               << ": "
               << error
               << std::endl;
+    }
+
+    template <typename Parser>
+    typename CommandLineInterpreter<Parser>::ParserErrorType
+    CommandLineInterpreter<Parser>::parse(std::string::iterator& begin,
+        std::string::iterator end, std::string& command,
+        CommandDetailsType& details)
+    {
+        if (parserObject_) {
+            return (*parserObject_)(begin, end, command, details);
+        }
+        else {
+            return parserFunction_(begin, end, command, details);
+        }
     }
 }
 
