@@ -33,6 +33,8 @@ const char PROMPT_TEXT[] = "$ ";
 // Function to be invoked by the interpreter when the user inputs the
 // 'exit' command.
 //
+// If this function returns true, the interpreter ends.
+//
 // See include/cli/shell_parser.hpp for
 // cli::parser::shellparser::CommandArguments definition.
 //
@@ -46,6 +48,8 @@ bool exitCommandCallback(const std::string& command,
 //
 // Function to be invoked by the interpreter when the user inputs any
 // other command.
+//
+// If this function returns true, the interpreter ends.
 //
 // See include/cli/shell_parser.hpp for
 // cli::parser::shellparser::CommandArguments definition.
