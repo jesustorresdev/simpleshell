@@ -106,18 +106,18 @@ namespace cli { namespace parser
     // Base class for parsers based on Boost.Spirit.
     //
 
-    template <typename Command, typename Details,
+    template <typename Command, typename Arguments,
         typename T1 = unused_type, typename T2 = unused_type,
         typename T3 = unused_type>
     struct BoostParserBase
         : qi::grammar<typename Command::iterator,
-              fusion::vector<Command&, Details&>(), T1, T2, T3>
+              fusion::vector<Command&, Arguments&>(), T1, T2, T3>
     {
-        typedef BoostParserBase<Command, Details, T1, T2, T3> Type;
+        typedef BoostParserBase<Command, Arguments, T1, T2, T3> Type;
 
         typedef typename Command::iterator IteratorType;
         typedef typename qi::grammar<IteratorType,
-            fusion::vector<Command&, Details&>(), T1, T2, T3> ParserType;
+            fusion::vector<Command&, Arguments&>(), T1, T2, T3> ParserType;
         typedef BoostParserError<IteratorType> ParserErrorType;
 
         //
@@ -137,23 +137,23 @@ namespace cli { namespace parser
         typedef IteratorType& arg1_type;
         typedef IteratorType arg2_type;
         typedef Command& arg3_type;
-        typedef Details& arg4_type;
+        typedef Arguments& arg4_type;
 
         ParserErrorType operator()(IteratorType& begin, IteratorType end,
-            Command& command, Details& details)
-            { return parse(begin, end, command, details); }
+            Command& command, Arguments& arguments)
+            { return parse(begin, end, command, arguments); }
 
         protected:
 
             virtual ParserErrorType parse(IteratorType& begin,
-                IteratorType end, Command& command, Details& details)
+                IteratorType end, Command& command, Arguments& arguments)
             {
-                // Passing the attributes 'command' and 'details' to the parser
-                // forces that every valid grammar must to return a two
+                // Passing the attributes 'command' and 'arguments' to the
+                // parser forces that every valid grammar must to return a two
                 // references Sequence.
                 try {
                     bool success = qi::phrase_parse(begin, end, *this,
-                        skipper_type(), command, details);
+                        skipper_type(), command, arguments);
                     if (success) {
                         return ParserErrorType();
                     }

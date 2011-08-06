@@ -34,11 +34,11 @@ const char PROMPT_TEXT[] = "$ ";
 // 'exit' command.
 //
 // See include/cli/shell_parser.hpp for
-// cli::parser::shellparser::CommandDetails definition.
+// cli::parser::shellparser::CommandArguments definition.
 //
 
 bool exitCommandCallback(const std::string& command,
-    cli::parser::shellparser::CommandDetails const& details)
+    cli::parser::shellparser::CommandArguments const& arguments)
 {
     return true;
 }
@@ -48,14 +48,14 @@ bool exitCommandCallback(const std::string& command,
 // other command.
 //
 // See include/cli/shell_parser.hpp for
-// cli::parser::shellparser::CommandDetails definition.
+// cli::parser::shellparser::CommandArguments definition.
 //
 
 bool defaultCommandCallback(const std::string& command,
-    cli::parser::shellparser::CommandDetails const& details)
+    cli::parser::shellparser::CommandArguments const& arguments)
 {
     std::cout << command << ": ";
-    std::cout << details << std::endl;
+    std::cout << arguments << std::endl;
     return false;
 }
 

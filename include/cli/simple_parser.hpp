@@ -43,7 +43,7 @@ namespace cli { namespace parser { namespace simpleparser
     namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace phoenix = boost::phoenix;
 
-    typedef std::vector<std::string> CommandDetails;
+    typedef std::vector<std::string> CommandArguments;
 
     //
     // Class SimpleParser
@@ -54,7 +54,7 @@ namespace cli { namespace parser { namespace simpleparser
     //
 
     struct SimpleParser
-        : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
+        : BoostParserBase<std::string, CommandArguments, iso8859_1::space_type>
     {
         SimpleParser() : SimpleParser::base_type(start)
         {

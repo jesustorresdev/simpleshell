@@ -114,7 +114,7 @@ namespace cli { namespace callback
     struct DoCommandCallback
     {
         typedef bool (Type)(const std::string&,
-            typename T::CommandDetailsType const&);
+            typename T::CommandArgumentsType const&);
         static const char* name() { return "DoCommandCallback"; }
     };
 

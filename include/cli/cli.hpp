@@ -69,7 +69,7 @@ namespace cli
             struct ParserTraits<T, typename boost::disable_if<
                 boost::function_types::is_nonmember_callable_builtin<T> >::type>
             {
-                typedef typename T::arg4_type CommandDetailsType;
+                typedef typename T::arg4_type CommandArgumentsType;
                 typedef typename T::result_type ParserErrorType;
             };
 
@@ -88,7 +88,7 @@ namespace cli
                 typedef typename boost::mpl::at<
                     typename boost::function_types::parameter_types<T>::type,
                     boost::mpl::int_<3>
-                >::type CommandDetailsType;
+                >::type CommandArgumentsType;
                 typedef typename boost::function_types::result_type<T>::type
                     ParserErrorType;
             };
@@ -98,12 +98,12 @@ namespace cli
             //
 
             typedef typename boost::remove_reference<
-                typename ParserTraits<Parser>::CommandDetailsType
-            >::type CommandDetailsType;
+                typename ParserTraits<Parser>::CommandArgumentsType
+            >::type CommandArgumentsType;
             typedef typename ParserTraits<Parser>::ParserErrorType
                 ParserErrorType;
             typedef ParserErrorType (ParserSignature)(std::string::iterator&,
-                std::string::iterator, std::string&, CommandDetailsType&);
+                std::string::iterator, std::string&, CommandArgumentsType&);
 
             //
             // Class constructors
@@ -172,7 +172,7 @@ namespace cli
             //
 
             virtual bool doCommand(const std::string& command,
-                CommandDetailsType const& details);
+                CommandArgumentsType const& arguments);
             virtual bool emptyLine();
 
             //
@@ -256,7 +256,7 @@ namespace cli
 
             ParserErrorType parse(std::string::iterator& begin,
                 std::string::iterator end, std::string& command,
-                CommandDetailsType& details);
+                CommandArgumentsType& arguments);
     };
 
     template <typename Parser>
@@ -329,8 +329,8 @@ namespace cli
         std::string::iterator end = line.end();
         while (begin != end) {
             std::string command;
-            CommandDetailsType details;
-            ParserErrorType error = parse(begin, end, command, details);
+            CommandArgumentsType arguments;
+            ParserErrorType error = parse(begin, end, command, arguments);
 
             bool isFinished;
             if (error) {
@@ -338,7 +338,7 @@ namespace cli
                 return isFinished;
             }
             else {
-                isFinished = doCommand(command, details);
+                isFinished = doCommand(command, arguments);
                 isFinished = postDoCommand(isFinished, line);
                 if (isFinished)
                     return true;
@@ -349,16 +349,16 @@ namespace cli
 
     template <typename Parser>
     bool CommandLineInterpreter<Parser>::doCommand(const std::string& command,
-        CommandDetailsType const& details)
+        CommandArgumentsType const& arguments)
     {
         typename DoCommandCallbacks::const_iterator it;
         it = doCommandCallbacks_.find(command);
         if (it == doCommandCallbacks_.end()) {
             return defaultDoCommandCallback_.empty() ?
-                false : defaultDoCommandCallback_(command, details);
+                false : defaultDoCommandCallback_(command, arguments);
         }
         else {
-            return it->second(command, details);
+            return it->second(command, arguments);
         }
     }
 
@@ -454,13 +454,13 @@ namespace cli
     typename CommandLineInterpreter<Parser>::ParserErrorType
     CommandLineInterpreter<Parser>::parse(std::string::iterator& begin,
         std::string::iterator end, std::string& command,
-        CommandDetailsType& details)
+        CommandArgumentsType& arguments)
     {
         if (parserObject_) {
-            return (*parserObject_)(begin, end, command, details);
+            return (*parserObject_)(begin, end, command, arguments);
         }
         else {
-            return parserFunction_(begin, end, command, details);
+            return parserFunction_(begin, end, command, arguments);
         }
     }
 }

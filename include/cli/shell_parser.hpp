@@ -45,7 +45,7 @@
 namespace cli { namespace parser { namespace shellparser
 {
     //
-    // Class CommandDetails
+    // Class CommandArguments
     //
     // Stores the information provided by the parser ShellParser about the
     // command specified.
@@ -70,7 +70,7 @@ namespace cli { namespace parser { namespace shellparser
         std::string argument;
     };
 
-    struct CommandDetails
+    struct CommandArguments
     {
         enum TypeOfTerminator
         {
@@ -84,26 +84,26 @@ namespace cli { namespace parser { namespace shellparser
         std::vector<StdioRedirection> redirections;
         TypeOfTerminator terminator;
 
-        CommandDetails() : terminator(NORMAL) {}
+        CommandArguments() : terminator(NORMAL) {}
 
         std::string getCommandName() const
             { return arguments.empty() ? std::string() : arguments[0]; }
     };
 
     //
-    // Overload insertion operator (<<) for class CommandDetails.
+    // Overload insertion operator (<<) for class CommandArguments.
     // It is required to debug the parser rules.
     //
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& out,
-        const CommandDetails& details)
+        const CommandArguments& arguments)
     {
-        return out << "{variable: "     << details.variable
-                  << ", arguments: "    << details.arguments
-                  << ", redirections: " << details.redirections
-                  << ", terminator: "   << details.terminator << '}';
+        return out << "{variable: "     << arguments.variable
+                  << ", arguments: "    << arguments.arguments
+                  << ", redirections: " << arguments.redirections
+                  << ", terminator: "   << arguments.terminator << '}';
     }
 
     template <typename CharT, typename Traits>
@@ -126,7 +126,7 @@ namespace cli { namespace parser { namespace shellparser
 }}}
 
 //
-// Adaptors from CommandDetails classes to Boost.Fusion sequences. They are
+// Adaptors from CommandArguments classes to Boost.Fusion sequences. They are
 // required by the parser ShellParser. Must be defined at global scope.
 //
 
@@ -143,11 +143,11 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::shellparser::CommandDetails,
+    cli::parser::shellparser::CommandArguments,
     (cli::parser::shellparser::VariableAssignment, variable)
     (std::vector<std::string>, arguments)
     (std::vector<cli::parser::shellparser::StdioRedirection>, redirections)
-    (cli::parser::shellparser::CommandDetails::TypeOfTerminator, terminator)
+    (cli::parser::shellparser::CommandArguments::TypeOfTerminator, terminator)
 )
 
 namespace cli { namespace parser { namespace shellparser
@@ -165,7 +165,7 @@ namespace cli { namespace parser { namespace shellparser
     //
 
     struct ShellParser
-        : BoostParserBase<std::string, CommandDetails, iso8859_1::space_type>
+        : BoostParserBase<std::string, CommandArguments, iso8859_1::space_type>
     {
         ShellParser() : ShellParser::base_type(start)
         {
@@ -264,7 +264,7 @@ namespace cli { namespace parser { namespace shellparser
             );
             start = command [
                  at_c<1>(_val) = _1,
-                 at_c<0>(_val) = bind(&CommandDetails::getCommandName, _1)
+                 at_c<0>(_val) = bind(&CommandArguments::getCommandName, _1)
             ];
 
             character.name(translate("character"));
@@ -310,24 +310,24 @@ namespace cli { namespace parser { namespace shellparser
         } redirectors;
 
         struct Terminators
-            : qi::symbols<char, CommandDetails::TypeOfTerminator>
+            : qi::symbols<char, CommandArguments::TypeOfTerminator>
         {
             Terminators()
             {
                 add
-                    (";", CommandDetails::NORMAL)
-                    ("&", CommandDetails::BACKGROUNDED)
+                    (";", CommandArguments::NORMAL)
+                    ("&", CommandArguments::BACKGROUNDED)
                 ;
             }
         } terminators;
 
         struct Pipe
-            : qi::symbols<char, CommandDetails::TypeOfTerminator>
+            : qi::symbols<char, CommandArguments::TypeOfTerminator>
         {
             Pipe()
             {
                 add
-                    ("|", CommandDetails::PIPED)
+                    ("|", CommandArguments::PIPED)
                 ;
             }
         } pipe;
@@ -351,7 +351,7 @@ namespace cli { namespace parser { namespace shellparser
         qi::rule<IteratorType, VariableAssignment()> assignment;
         qi::rule<IteratorType, StdioRedirection(),
             iso8859_1::space_type> redirection;
-        qi::rule<IteratorType, CommandDetails(),
+        qi::rule<IteratorType, CommandArguments(),
             iso8859_1::space_type> command;
         qi::rule<IteratorType, ShellParser::sig_type,
             iso8859_1::space_type> start;
