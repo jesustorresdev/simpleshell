@@ -29,31 +29,60 @@ const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
 
 const char PROMPT_TEXT[] = "$ ";
 
+//
+// Function to be invoked by the interpreter when the user inputs the
+// 'exit' command.
+//
+// See include/cli/shell_parser.hpp for
+// cli::parser::shellparser::CommandDetails definition.
+//
+
+bool exitCommandCallback(const std::string& command,
+    cli::parser::shellparser::CommandDetails const& details)
+{
+    return true;
+}
+
+//
+// Function to be invoked by the interpreter when the user inputs any
+// other command.
+//
+// See include/cli/shell_parser.hpp for
+// cli::parser::shellparser::CommandDetails definition.
+//
+
 bool defaultCommandCallback(const std::string& command,
-    const cli::parser::shellparser::CommandDetails& details)
+    cli::parser::shellparser::CommandDetails const& details)
 {
     std::cout << command << ": ";
     std::cout << details << std::endl;
     return false;
 }
 
-bool exitCommandCallback(const std::string& command,
-    const cli::parser::shellparser::CommandDetails& details)
-{
-    return true;
-}
+//
+// Main function
+//
 
 int main(int argc, char** argv)
 {
+    // Create the interpreter object with the ShellParser parser
     cli::CommandLineInterpreter<cli::parser::ShellParser> interpreter;
+
+    // Set the intro and prompt texts
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);
 
-    interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &defaultCommandCallback);
+    // Set the callback function that will be invoked when the user inputs
+    // the 'exit' command
     interpreter.setCallback<cli::callback::DoCommandCallback>(
         &exitCommandCallback, "exit");
 
+    // Set the callback function that will be invoked when the user inputs
+    // any other command
+    interpreter.setCallback<cli::callback::DoCommandCallback>(
+        &defaultCommandCallback);
+
+    // Run the interpreter
     interpreter.loop();
 
     return 0;
