@@ -24,16 +24,7 @@
 #include <string>
 #include <vector>
 
-//#define BOOST_SPIRIT_DEBUG
-
-#include <boost/spirit/include/phoenix_bind.hpp>
-#include <boost/spirit/include/phoenix_container.hpp>
-#include <boost/spirit/include/phoenix_fusion.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_statement.hpp>
 #include <boost/spirit/include/qi.hpp>
-
-#define translate(str) str  // TODO: Use Boost.Locale when available
 
 #include <cli/boost_parser_base.hpp>
 
@@ -41,7 +32,6 @@ namespace cli { namespace parser { namespace simpleparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
-    namespace phoenix = boost::phoenix;
 
     typedef std::vector<std::string> CommandArguments;
 
@@ -56,46 +46,11 @@ namespace cli { namespace parser { namespace simpleparser
     struct SimpleParser
         : BoostParserBase<std::string, CommandArguments, iso8859_1::space_type>
     {
-        SimpleParser() : SimpleParser::base_type(start)
-        {
-            using qi::_1;
-            using qi::_2;
-            using qi::_3;
-            using qi::_4;
-            using qi::_val;
-            using qi::eoi;
-            using qi::fail;
-            using qi::lexeme;
-            using qi::on_error;
-            using iso8859_1::char_;
-            using iso8859_1::space;
-            using phoenix::at;
-            using phoenix::at_c;
-            using phoenix::bind;
+        SimpleParser();
 
-            eol = eoi;
-            character %= char_;
-            escape %= '\\' > character;
-            word %= lexeme[+(escape | (char_ - space))];
-            quotedString %= lexeme['\'' >> *(char_ - '\'') > '\''];
-            doubleQuotedString %= lexeme['"' >> *(char_ - '"') > '"'];
-            argument %= quotedString | doubleQuotedString | word;
-            start = (+argument) [at_c<1>(_val) = _1,
-                                 at_c<0>(_val) = at(_1, 0)] > eol;
-
-            character.name(translate("character"));
-            eol.name(translate("end-of-line"));
-
-            on_error<fail>(
-                start, bind(&SimpleParser::throwParserError, _1, _2, _3, _4)
-            );
-
-//            BOOST_SPIRIT_DEBUG_NODE(word);
-//            BOOST_SPIRIT_DEBUG_NODE(quotedString);
-//            BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
-//            BOOST_SPIRIT_DEBUG_NODE(argument);
-            BOOST_SPIRIT_DEBUG_NODE(start);
-        }
+        //
+        // Parser rules
+        //
 
         qi::rule<IteratorType> eol;
         qi::rule<IteratorType, char()> character;
@@ -115,19 +70,6 @@ namespace cli { namespace parser { namespace simpleparser
                 IteratorType const& last, IteratorType const& error,
                 const boost::spirit::info& info);
     };
-
-    void SimpleParser::throwParserError(IteratorType const& first,
-        IteratorType const& last, IteratorType const& error,
-        const boost::spirit::info& info)
-    {
-        std::string what;
-        what += translate("syntax error, expecting");
-        what += " " + info.tag + " " + translate("at") + ": ";
-        what += (error == last) ? translate("<end-of-line>")
-            : std::string(error, last);
-
-        base_type::throwParserError(what, first, last, error, info);
-    }
 }}}
 
 namespace cli { namespace parser

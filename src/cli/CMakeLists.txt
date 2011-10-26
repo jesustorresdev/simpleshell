@@ -17,13 +17,18 @@
 #
 
 SET (CLI_SOURCE ${CLI_SOURCE} auxiliary.cpp dl.cpp fileno.cpp glob.cpp
-                              internals.cpp readline.cpp)
+                              internals.cpp readline.cpp shell_parser.cpp
+                              simple_parser.cpp)
 
 # Build static library
 ADD_LIBRARY(cli STATIC ${CLI_SOURCE})
-#SET_TARGET_PROPERTIES(cli PROPERTIES COMPILE_FLAGS -fPIC)
+SET_TARGET_PROPERTIES(cli PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build shared library
-ADD_LIBRARY(cli-shared SHARED ${CLI_SOURCE})
-TARGET_LINK_LIBRARIES(cli-shared ${CLI_LINK_LIBS})
+#ADD_LIBRARY(cli-shared SHARED ${CLI_SOURCE})
+#TARGET_LINK_LIBRARIES(cli-shared ${CLI_LINK_LIBS})
+ADD_LIBRARY(cli-shared SHARED)
+TARGET_LINK_LIBRARIES(cli-shared
+                      -Wl,--whole-archive cli
+                      -Wl,--no-whole-archive ${CLI_LINK_LIBS})
 SET_TARGET_PROPERTIES(cli-shared PROPERTIES OUTPUT_NAME cli)
