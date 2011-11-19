@@ -31,4 +31,5 @@ ADD_LIBRARY(cli-shared SHARED)
 TARGET_LINK_LIBRARIES(cli-shared
                       -Wl,--whole-archive cli
                       -Wl,--no-whole-archive ${CLI_LINK_LIBS})
-SET_TARGET_PROPERTIES(cli-shared PROPERTIES OUTPUT_NAME cli)
+SET_TARGET_PROPERTIES(cli-shared PROPERTIES OUTPUT_NAME cli
+                                            LINKER_LANGUAGE CXX)
