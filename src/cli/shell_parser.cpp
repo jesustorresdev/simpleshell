@@ -49,7 +49,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 
 BOOST_FUSION_ADAPT_STRUCT(
     cli::parser::shellparser::CommandArguments,
-    (cli::parser::shellparser::VariableAssignment, variable)
+    (std::vector<cli::parser::shellparser::VariableAssignment>, variables)
     (std::vector<std::string>, arguments)
     (std::vector<cli::parser::shellparser::StdioRedirection>, redirections)
     (cli::parser::shellparser::CommandArguments::TypeOfTerminator, terminator)
@@ -152,7 +152,7 @@ namespace cli { namespace parser { namespace shellparser
         redirection %= redirectors >> redirectionArgument;
 
         command = (
-            assignment      [at_c<0>(_val) = _1] ||
+            (+assignment)   [at_c<0>(_val) = _1] ||
             (
                 +expandedWord
                 [insert(at_c<1>(_val), end(at_c<1>(_val)),

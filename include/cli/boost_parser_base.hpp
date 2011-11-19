@@ -21,6 +21,7 @@
 
 #include <stdexcept>
 
+#include <boost/fusion/include/unused.hpp>
 #include <boost/fusion/include/vector.hpp>
 #include <boost/spirit/include/qi.hpp>
 

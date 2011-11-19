@@ -71,7 +71,7 @@ namespace cli { namespace parser { namespace shellparser
             PIPED               // command1 | command2
         };
 
-        VariableAssignment variable;
+        std::vector<VariableAssignment> variables;
         std::vector<std::string> arguments;
         std::vector<StdioRedirection> redirections;
         TypeOfTerminator terminator;
@@ -92,7 +92,7 @@ namespace cli { namespace parser { namespace shellparser
     operator<<(std::basic_ostream<CharT, Traits>& out,
         const CommandArguments& arguments)
     {
-        return out << "{variable: "     << arguments.variable
+        return out << "{variables: "    << arguments.variables
                   << ", arguments: "    << arguments.arguments
                   << ", redirections: " << arguments.redirections
                   << ", terminator: "   << arguments.terminator << '}';
