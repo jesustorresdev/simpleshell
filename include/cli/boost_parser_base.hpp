@@ -60,16 +60,23 @@ namespace cli { namespace parser
         //
 
         BoostParserError(bool fail = false)
-            : runtime_error(""), what_(""), parserFail_(fail) {}
+            : runtime_error(""), what_(""), parserFail_(fail),
+              containsDetails_(false) {}
+
+        BoostParserError(const char* what)
+            : runtime_error(std::string(what)), what_(""), parserFail_(true),
+              containsDetails_(false){}
 
         BoostParserError(const std::string& what)
-            : runtime_error(what), parserFail_(true) {}
+            : runtime_error(what), what_(""), parserFail_(true),
+              containsDetails_(false) {}
 
         BoostParserError(const std::string& what, Iterator const& first,
             Iterator const& last, Iterator const& error,
             const boost::spirit::info& info)
             : runtime_error(what), first(first), last(last),
-              error(error), what_(info), parserFail_(true) {}
+              error(error), what_(info), parserFail_(true),
+              containsDetails_(true){}
 
         virtual ~BoostParserError() throw() {}
 
