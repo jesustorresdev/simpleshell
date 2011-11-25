@@ -45,11 +45,10 @@ namespace cli { namespace auxiliary
     {
 
         int length = strings.size();
-        boost::shared_array<char*> argv =
-            boost::shared_array<char*>(new char*[length + 1], deleteArgV);
+        boost::shared_array<char*> argv(new char*[length + 1], deleteArgV);
         for (int i = 0; i < length; ++i) {
             argv[i] = new char[strings[i].size() + 1];
-            std::strcpy(argv[i], strings[i].c_str());
+            ::strcpy(argv[i], strings[i].c_str());
         }
         argv[length] = NULL;
         return argv;
