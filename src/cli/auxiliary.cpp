@@ -29,15 +29,17 @@
 namespace cli { namespace auxiliary
 {
     //
-    // Functions for std::vector<std::string> to char** conversion
+    // Functions for std::vector<std::string> to char*[] conversion
     //
 
     void deleteArgV(char** argv)
     {
-        while(*argv != NULL) {
-            delete(*argv);
-            ++argv;
+        char** p = argv;
+        while(*p != NULL) {
+            delete[] *p;
+            ++p;
         }
+        delete[] argv;
     }
 
     boost::shared_array<char*>
