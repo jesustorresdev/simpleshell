@@ -53,9 +53,9 @@ namespace cli { namespace parser { namespace shellparser
     {
         enum TypeOfRedirection
         {
-            TRUNCATED_INPUT,    // command <filename
-            TRUNCATED_OUTPUT,   // command >filename
-            APPENDED_OUTPUT     // command >>filename
+            INPUT,              // command < filename
+            TRUNCATED_OUTPUT,   // command > filename
+            APPENDED_OUTPUT     // command >> filename
         };
 
         TypeOfRedirection type;
@@ -139,7 +139,7 @@ namespace cli { namespace parser { namespace shellparser
             Redirections()
             {
                 add
-                    ("<",  StdioRedirection::TRUNCATED_INPUT)
+                    ("<",  StdioRedirection::INPUT)
                     (">",  StdioRedirection::TRUNCATED_OUTPUT)
                     (">>", StdioRedirection::APPENDED_OUTPUT)
                 ;
