@@ -280,7 +280,7 @@ namespace cli { namespace callback
     {
         template <typename T, typename Functor>
         static void setCallback(T& interpreter, Functor function)
-            { interpreter.lineParser_->PathnameExpansionCallback_ = function; }
+            { interpreter.lineParser_->pathnameExpansionCallback_ = function; }
     };
 }}
 
