@@ -1,7 +1,7 @@
 /*
  * shell_parser.hpp - Parser designed to emulate a very simple shell
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/auxiliary.hpp>
-#include <cli/boost_parser_base.hpp>
+#include <cli/boost_parser_adapter.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
 
@@ -35,6 +35,7 @@ namespace cli { namespace parser { namespace shellparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
+    namespace fusion = boost::fusion;
 
     //
     // Class CommandArguments
@@ -119,15 +120,21 @@ namespace cli { namespace parser { namespace shellparser
     //
     // Class ShellParser
     //
+    // The parser must return a two-references Sequence. They have to refer to
+    // the name and the arguments of parsed command respectively.
+    //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
     // exceptions when finds 8-bit characters.
     //
 
-    struct ShellParser
-        : BoostParserBase<std::string, CommandArguments, iso8859_1::space_type>
+    template <typename Iterator>
+    struct ShellParserImpl
+        : qi::grammar<Iterator,
+              fusion::vector<std::string&, CommandArguments&>(),
+              iso8859_1::space_type>
     {
-        ShellParser();
+        ShellParserImpl();
 
         //
         // Parser rules
@@ -169,28 +176,27 @@ namespace cli { namespace parser { namespace shellparser
             }
         } pipe;
 
-        qi::rule<IteratorType> eol;
-        qi::rule<IteratorType> neol;
-        qi::rule<IteratorType, char()> character;
-        qi::rule<IteratorType, char()> dereference;
-        qi::rule<IteratorType, char()> special;
-        qi::rule<IteratorType, char()> escape;
-        qi::rule<IteratorType, std::string()> name;
-        qi::rule<IteratorType, std::string(), qi::locals<bool> > variable;
-        qi::rule<IteratorType, std::string()> quotedString;
-        qi::rule<IteratorType, std::string()> doubleQuotedString;
-        qi::rule<IteratorType, std::string()> word;
-        qi::rule<IteratorType, std::vector<std::string>()> expandedWord;
-        qi::rule<IteratorType, std::string()> variableValue;
-        qi::rule<IteratorType, void(bool)> unambiguousRedirection;
-        qi::rule<IteratorType, std::string(),
+        qi::rule<Iterator> eol;
+        qi::rule<Iterator> neol;
+        qi::rule<Iterator, char()> character;
+        qi::rule<Iterator, char()> dereference;
+        qi::rule<Iterator, char()> special;
+        qi::rule<Iterator, char()> escape;
+        qi::rule<Iterator, std::string()> name;
+        qi::rule<Iterator, std::string(), qi::locals<bool> > variable;
+        qi::rule<Iterator, std::string()> quotedString;
+        qi::rule<Iterator, std::string()> doubleQuotedString;
+        qi::rule<Iterator, std::string()> word;
+        qi::rule<Iterator, std::vector<std::string>()> expandedWord;
+        qi::rule<Iterator, std::string()> variableValue;
+        qi::rule<Iterator, void(bool)> unambiguousRedirection;
+        qi::rule<Iterator, std::string(),
             qi::locals<int> > redirectionArgument;
-        qi::rule<IteratorType, VariableAssignment()> assignment;
-        qi::rule<IteratorType, StdioRedirection(),
+        qi::rule<Iterator, VariableAssignment()> assignment;
+        qi::rule<Iterator, StdioRedirection(),
             iso8859_1::space_type> redirection;
-        qi::rule<IteratorType, CommandArguments(),
-            iso8859_1::space_type> command;
-        qi::rule<IteratorType, ShellParser::sig_type,
+        qi::rule<Iterator, CommandArguments(), iso8859_1::space_type> command;
+        qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
             iso8859_1::space_type> start;
 
         protected:
@@ -205,8 +211,8 @@ namespace cli { namespace parser { namespace shellparser
 
         private:
 
-            CLI_DECLARE_CALLBACKS(
-                ShellParser,
+            CLI_DECLARE_CALLBACKS_TPL(
+                ShellParserImpl,
                 (VariableLookupCallback, variableLookupCallback_)
                 (PathnameExpansionCallback, pathnameExpansionCallback_)
             )
@@ -221,10 +227,13 @@ namespace cli { namespace parser { namespace shellparser
             static std::string stringsJoin(const std::vector<std::string>& v)
                 { return boost::algorithm::join(v, std::string(1, ' ')); }
 
-            static void throwParserError(IteratorType const& first,
-                IteratorType const& last, IteratorType const& error,
+            static void throwParserError(const Iterator& first,
+                const Iterator& last, const Iterator& error,
                 const boost::spirit::info& info);
     };
+
+    typedef BoostParserAdapter<std::string::const_iterator, CommandArguments,
+        ShellParserImpl> ShellParser;
 }}}
 
 namespace cli { namespace parser

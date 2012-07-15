@@ -1,7 +1,7 @@
 /*
  * shell_parser.cpp - Parser designed to emulate a very simple shell
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,14 +62,16 @@ namespace cli { namespace parser { namespace shellparser
     namespace phoenix = boost::phoenix;
 
     //
-    // Class ShellParser
+    // Class ShellParserImpl
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
     // exceptions when finds 8-bit characters.
     //
 
-    ShellParser::ShellParser() : ShellParser::base_type(start)
+    template <typename Iterator>
+    ShellParserImpl<Iterator>::ShellParserImpl()
+        : ShellParserImpl::base_type(start)
     {
         using qi::_1;
         using qi::_2;
@@ -109,7 +111,7 @@ namespace cli { namespace parser { namespace shellparser
             eps[_a = false] >>
             dereference >> (
                 -lit('{')[_a = true] >
-                name[_val = bind(&ShellParser::variableLookup, *this, _1)]
+                name[_val = bind(&ShellParserImpl::variableLookup, *this, _1)]
             ) >> ((eps(_a) > '}') | eps(!_a));
 
         quotedString %= '\'' >> *(char_ - '\'') > '\'';
@@ -126,18 +128,18 @@ namespace cli { namespace parser { namespace shellparser
         word = +(
             variable                    [_val += _1]          |
             quotedString
-                [_val += bind(&ShellParser::globEscape, _1)]  |
+                [_val += bind(&ShellParserImpl::globEscape, _1)]  |
             doubleQuotedString
-                [_val += bind(&ShellParser::globEscape, _1)]  |
+                [_val += bind(&ShellParserImpl::globEscape, _1)]  |
             escape                      [push_back(_val, _1)] |
             (char_ - space - special)   [push_back(_val, _1)]
         );
 
         expandedWord = word
-            [_val = bind(&ShellParser::pathnameExpansion, *this, _1)];
+            [_val = bind(&ShellParserImpl::pathnameExpansion, *this, _1)];
 
         variableValue = expandedWord
-            [_val = bind(&ShellParser::stringsJoin, _1)];
+            [_val = bind(&ShellParserImpl::stringsJoin, _1)];
 
         unambiguousRedirection = eps(_r1);
         redirectionArgument = (
@@ -178,7 +180,7 @@ namespace cli { namespace parser { namespace shellparser
         neol.name(translate("more characters"));
 
         on_error<fail>(
-            start, bind(&ShellParser::throwParserError, _1, _2, _3, _4)
+            start, bind(&ShellParserImpl::throwParserError, _1, _2, _3, _4)
         );
 
 //      BOOST_SPIRIT_DEBUG_NODE(name);
@@ -194,13 +196,16 @@ namespace cli { namespace parser { namespace shellparser
         BOOST_SPIRIT_DEBUG_NODE(start);
     }
 
-    std::string ShellParser::variableLookup(const std::string& name)
+    template <typename Iterator>
+    std::string ShellParserImpl<Iterator>::variableLookup(
+        const std::string& name)
     {
         return variableLookupCallback_.empty() ?
             std::string() : variableLookupCallback_(name);
     }
 
-    std::vector<std::string> ShellParser::pathnameExpansion(
+    template <typename Iterator>
+    std::vector<std::string> ShellParserImpl<Iterator>::pathnameExpansion(
         const std::string& pattern)
     {
         if (! pathnameExpansionCallback_.empty()) {
@@ -229,8 +234,9 @@ namespace cli { namespace parser { namespace shellparser
         return glob;
     }
 
-    void ShellParser::throwParserError(IteratorType const& first,
-        IteratorType const& last, IteratorType const& error,
+    template <typename Iterator>
+    void ShellParserImpl<Iterator>::throwParserError(const Iterator& first,
+        const Iterator& last, const Iterator& error,
         const boost::spirit::info& info)
     {
         std::string what;
@@ -239,6 +245,12 @@ namespace cli { namespace parser { namespace shellparser
         what += (error == last) ? translate("<end-of-line>")
             : std::string(error, last);
 
-        base_type::throwParserError(what, first, last, error, info);
+        throw BoostParserError<Iterator>(what, first, last, error, info);
     }
+
+    //
+    // Explicit instantiations of ShellParserImpl class
+    //
+
+    template class ShellParserImpl<std::string::const_iterator>;
 }}}

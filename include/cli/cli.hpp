@@ -102,8 +102,9 @@ namespace cli
             >::type CommandArgumentsType;
             typedef typename ParserTraits<Parser>::ParserErrorType
                 ParserErrorType;
-            typedef ParserErrorType (ParserSignature)(std::string::iterator&,
-                std::string::iterator, std::string&, CommandArgumentsType&);
+            typedef ParserErrorType (ParserSignature)(
+                std::string::const_iterator&, std::string::const_iterator,
+                std::string&, CommandArgumentsType&);
 
             //
             // Class constructors
@@ -254,8 +255,8 @@ namespace cli
             parserFactory()
                 { return new P; }
 
-            ParserErrorType parse(std::string::iterator& begin,
-                std::string::iterator end, std::string& command,
+            ParserErrorType parse(std::string::const_iterator& begin,
+                std::string::const_iterator end, std::string& command,
                 CommandArgumentsType& arguments);
     };
 
@@ -325,8 +326,8 @@ namespace cli
             lastCommand_ = line;
         }
 
-        std::string::iterator begin = line.begin();
-        std::string::iterator end = line.end();
+        std::string::const_iterator begin = line.begin();
+        std::string::const_iterator end = line.end();
         while (begin != end) {
             std::string command;
             CommandArgumentsType arguments;
@@ -452,8 +453,8 @@ namespace cli
 
     template <typename Parser>
     typename CommandLineInterpreter<Parser>::ParserErrorType
-    CommandLineInterpreter<Parser>::parse(std::string::iterator& begin,
-        std::string::iterator end, std::string& command,
+    CommandLineInterpreter<Parser>::parse(std::string::const_iterator& begin,
+        std::string::const_iterator end, std::string& command,
         CommandArgumentsType& arguments)
     {
         if (parserObject_) {

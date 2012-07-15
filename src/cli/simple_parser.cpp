@@ -2,7 +2,7 @@
  * simple_parser.cpp - Parser that only splits the command arguments and
  *                     supports quoted strings
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
+#include <cli/boost_parser_adapter.hpp>
 #include <cli/simple_parser.hpp>
 
 namespace cli { namespace parser { namespace simpleparser
@@ -36,14 +37,16 @@ namespace cli { namespace parser { namespace simpleparser
     namespace phoenix = boost::phoenix;
 
     //
-    // Class SimpleParser
+    // Class SimpleParserImpl
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
     // exceptions when finds 8-bit characters.
     //
 
-    SimpleParser::SimpleParser() : SimpleParser::base_type(start)
+    template <typename Iterator>
+    SimpleParserImpl<Iterator>::SimpleParserImpl()
+        : SimpleParserImpl::base_type(start)
     {
         using qi::_1;
         using qi::_2;
@@ -74,7 +77,7 @@ namespace cli { namespace parser { namespace simpleparser
         eol.name(translate("end-of-line"));
 
         on_error<fail>(
-            start, bind(&SimpleParser::throwParserError, _1, _2, _3, _4)
+            start, bind(&SimpleParserImpl::throwParserError, _1, _2, _3, _4)
         );
 
 //      BOOST_SPIRIT_DEBUG_NODE(word);
@@ -84,8 +87,9 @@ namespace cli { namespace parser { namespace simpleparser
         BOOST_SPIRIT_DEBUG_NODE(start);
     }
 
-    void SimpleParser::throwParserError(IteratorType const& first,
-        IteratorType const& last, IteratorType const& error,
+    template <typename Iterator>
+    void SimpleParserImpl<Iterator>::throwParserError(const Iterator& first,
+        const Iterator& last, const Iterator& error,
         const boost::spirit::info& info)
     {
         std::string what;
@@ -94,6 +98,12 @@ namespace cli { namespace parser { namespace simpleparser
         what += (error == last) ? translate("<end-of-line>")
             : std::string(error, last);
 
-        base_type::throwParserError(what, first, last, error, info);
+        throw BoostParserError<Iterator>(what, first, last, error, info);
     }
+
+    //
+    // Explicit instantiations of SimpleParserImpl class
+    //
+
+    template class SimpleParserImpl<std::string::const_iterator>;
 }}}

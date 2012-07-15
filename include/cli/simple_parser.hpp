@@ -2,7 +2,7 @@
  * simple_parser.hpp - Parser that only splits the command arguments and
  *                     supports quoted strings
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,52 +24,63 @@
 #include <string>
 #include <vector>
 
+#include <boost/fusion/include/vector.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <cli/boost_parser_base.hpp>
+#include <cli/auxiliary.hpp>
+#include <cli/boost_parser_adapter.hpp>
 
 namespace cli { namespace parser { namespace simpleparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
+    namespace fusion = boost::fusion;
 
     typedef std::vector<std::string> CommandArguments;
 
     //
-    // Class SimpleParser
+    // Class SimpleParserImpl
+    //
+    // The parser must return a two-references Sequence. They have to refer to
+    // the name and the arguments of parsed command respectively.
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
     // exceptions when finds 8-bit characters.
     //
 
-    struct SimpleParser
-        : BoostParserBase<std::string, CommandArguments, iso8859_1::space_type>
+    template <typename Iterator>
+    struct SimpleParserImpl
+        : qi::grammar<Iterator,
+              fusion::vector<std::string&, CommandArguments&>(),
+              iso8859_1::space_type>
     {
-        SimpleParser();
+        SimpleParserImpl();
 
         //
         // Parser rules
         //
 
-        qi::rule<IteratorType> eol;
-        qi::rule<IteratorType, char()> character;
-        qi::rule<IteratorType, char()> escape;
-        qi::rule<IteratorType, std::string(), iso8859_1::space_type> word;
-        qi::rule<IteratorType, std::string(),
-            iso8859_1::space_type> quotedString;
-        qi::rule<IteratorType, std::string(),
+        qi::rule<Iterator> eol;
+        qi::rule<Iterator, char()> character;
+        qi::rule<Iterator, char()> escape;
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> word;
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> quotedString;
+        qi::rule<Iterator, std::string(),
             iso8859_1::space_type> doubleQuotedString;
-        qi::rule<IteratorType, std::string(), iso8859_1::space_type> argument;
-        qi::rule<IteratorType, SimpleParser::sig_type,
+        qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
+        qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
             iso8859_1::space_type> start;
 
         private:
 
-            static void throwParserError(IteratorType const& first,
-                IteratorType const& last, IteratorType const& error,
+            static void throwParserError(const Iterator& first,
+                const Iterator& last, const Iterator& error,
                 const boost::spirit::info& info);
     };
+
+    typedef BoostParserAdapter<std::string::const_iterator, CommandArguments,
+        SimpleParserImpl> SimpleParser;
 }}}
 
 namespace cli { namespace parser
