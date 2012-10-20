@@ -1,7 +1,7 @@
 /*
  * auxiliary.hpp - Auxiliary public functions
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,32 +27,30 @@
 
 namespace cli { namespace auxiliary
 {
+    char** stdVectorStringToArgV(const std::vector<std::string> &strings);
 
-    boost::shared_array<char*> stdVectorStringToArgV(
+    boost::shared_array<char*> stdVectorStringToSmartArgV(
         const std::vector<std::string> &strings);
-
 }}
 
 namespace std
 {
-
     template <typename CharT, typename Traits, typename T, typename Alloc>
     basic_ostream<CharT, Traits>& operator<<(basic_ostream<CharT, Traits>& out,
         const vector<T, Alloc>& vector)
     {
         out << "[";
 
-        typename std::vector<T, Alloc>::const_iterator iter = vector.begin();
-        if (iter != vector.end()) {
-            out << *iter;
-            for (iter += 1; iter < vector.end(); ++iter) {
-                out << ", " << *iter;
+        typename std::vector<T, Alloc>::const_iterator i = vector.begin();
+        if (i != vector.end()) {
+            out << *i;
+            for (i += 1; i < vector.end(); ++i) {
+                out << ", " << *i;
             }
         }
 
         return out << "]";
     }
-
 }
 
 #endif /* AUXILIARY_HPP_ */

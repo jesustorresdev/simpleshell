@@ -1,7 +1,7 @@
 /*
  * auxiliary.cpp - Auxiliary public functions
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,17 +42,22 @@ namespace cli { namespace auxiliary
         delete[] argv;
     }
 
-    boost::shared_array<char*>
-    stdVectorStringToArgV(const std::vector<std::string> &strings)
+    char** stdVectorStringToArgV(const std::vector<std::string> &strings)
     {
-
         int length = strings.size();
-        boost::shared_array<char*> argv(new char*[length + 1], deleteArgV);
+        char** argv = new char*[length + 1];
         for (int i = 0; i < length; ++i) {
             argv[i] = new char[strings[i].size() + 1];
             ::strcpy(argv[i], strings[i].c_str());
         }
         argv[length] = NULL;
         return argv;
+    }
+
+    boost::shared_array<char*>
+    stdVectorStringToSmartArgV(const std::vector<std::string> &strings)
+    {
+        return boost::shared_array<char*>(stdVectorStringToArgV(strings),
+            deleteArgV);
     }
 }}
