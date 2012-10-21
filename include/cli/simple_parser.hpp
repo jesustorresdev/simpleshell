@@ -28,7 +28,7 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/auxiliary.hpp>
-#include <cli/boost_parser_adapter.hpp>
+#include <cli/basic_spirit.hpp>
 
 namespace cli { namespace parser { namespace simpleparser
 {
@@ -39,7 +39,7 @@ namespace cli { namespace parser { namespace simpleparser
     typedef std::vector<std::string> CommandArguments;
 
     //
-    // Class SimpleParserImpl
+    // Class SimpleParser
     //
     // The parser must return a two-references Sequence. They have to refer to
     // the name and the arguments of parsed command respectively.
@@ -50,12 +50,12 @@ namespace cli { namespace parser { namespace simpleparser
     //
 
     template <typename Iterator>
-    struct SimpleParserImpl
+    struct SimpleParser
         : qi::grammar<Iterator,
               fusion::vector<std::string&, CommandArguments&>(),
               iso8859_1::space_type>
     {
-        SimpleParserImpl();
+        SimpleParser();
 
         //
         // Parser rules
@@ -71,21 +71,31 @@ namespace cli { namespace parser { namespace simpleparser
         qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
         qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
             iso8859_1::space_type> start;
-
-        private:
-
-            static void throwParserError(const Iterator& first,
-                const Iterator& last, const Iterator& error,
-                const boost::spirit::info& info);
     };
 
-    typedef BoostParserAdapter<std::string::const_iterator, CommandArguments,
-        SimpleParserImpl> SimpleParser;
+    //
+    // Class SimpleInterpreter
+    //
+    // Interpreter which uses SimpleParser to parse the command line.
+    //
+
+    class SimpleInterpreter
+    : public BasicSpiritInterpreter<CommandArguments, SimpleParser>
+    {
+        public:
+            typedef BasicSpiritInterpreter<CommandArguments, SimpleParser>
+                BaseType;
+
+            SimpleInterpreter(bool useReadline = true);
+            SimpleInterpreter(std::istream& in, std::ostream& out,
+                std::ostream& err, bool useReadline = true);
+    };
 }}}
 
-namespace cli { namespace parser
+namespace cli
 {
-    using simpleparser::SimpleParser;
-}}
+    typedef parser::simpleparser::CommandArguments SimpleInterpreterArguments;
+    typedef parser::simpleparser::SimpleInterpreter SimpleInterpreter;
+}
 
 #endif /* SIMPLE_PARSER_HPP_ */

@@ -1,7 +1,7 @@
 /*
  * glob.hpp - Find pathnames matching a pattern
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,10 +106,10 @@ namespace glob
     inline Glob::operator std::vector<filesystem::path>() const
     {
         std::vector<filesystem::path> pathNames;
-        for (std::vector<std::string>::const_iterator iter =
-            pathNames_.begin(); iter < pathNames_.end(); ++iter)
+        for (std::vector<std::string>::const_iterator i =
+            pathNames_.begin(); i < pathNames_.end(); ++i)
         {
-            pathNames.push_back(filesystem::path(*iter));
+            pathNames.push_back(filesystem::path(*i));
         }
         return pathNames;
     }

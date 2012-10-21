@@ -27,7 +27,7 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include <cli/auxiliary.hpp>
-#include <cli/boost_parser_adapter.hpp>
+#include <cli/basic_spirit.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
 
@@ -36,6 +36,8 @@ namespace cli { namespace parser { namespace shellparser
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace fusion = boost::fusion;
+
+    class ShellInterpreter;
 
     //
     // Class CommandArguments
@@ -129,12 +131,12 @@ namespace cli { namespace parser { namespace shellparser
     //
 
     template <typename Iterator>
-    struct ShellParserImpl
+    struct ShellParser
         : qi::grammar<Iterator,
               fusion::vector<std::string&, CommandArguments&>(),
               iso8859_1::space_type>
     {
-        ShellParserImpl();
+        ShellParser(ShellInterpreter& interpreter);
 
         //
         // Parser rules
@@ -199,6 +201,37 @@ namespace cli { namespace parser { namespace shellparser
         qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
             iso8859_1::space_type> start;
 
+        private:
+            ShellInterpreter& interpreter_;
+
+            //
+            // Auxiliary methods
+            //
+
+            static std::string globEscape(const std::string& pattern)
+                { return glob::Glob::escape(pattern); }
+
+            static std::string stringsJoin(const std::vector<std::string>& v)
+                { return boost::algorithm::join(v, std::string(1, ' ')); }
+    };
+
+    //
+    // Class ShellInterpreter
+    //
+    // Interpreter which uses ShellParser to parse the command line.
+    //
+
+    class ShellInterpreter
+        : public BasicSpiritInterpreter<CommandArguments, ShellParser>
+    {
+        public:
+            typedef BasicSpiritInterpreter<CommandArguments, ShellParser>
+                BaseType;
+
+            ShellInterpreter(bool useReadline = true);
+            ShellInterpreter(std::istream& in, std::ostream& out,
+                std::ostream& err, bool useReadline = true);
+
         protected:
 
             //
@@ -211,34 +244,18 @@ namespace cli { namespace parser { namespace shellparser
 
         private:
 
-            CLI_DECLARE_CALLBACKS_TPL(
-                ShellParserImpl,
+            CLI_DECLARE_CALLBACKS(
+                ShellInterpreter,
                 (VariableLookupCallback, variableLookupCallback_)
                 (PathnameExpansionCallback, pathnameExpansionCallback_)
             )
-
-            //
-            // Auxiliary methods
-            //
-
-            static std::string globEscape(const std::string& pattern)
-                { return glob::Glob::escape(pattern); }
-
-            static std::string stringsJoin(const std::vector<std::string>& v)
-                { return boost::algorithm::join(v, std::string(1, ' ')); }
-
-            static void throwParserError(const Iterator& first,
-                const Iterator& last, const Iterator& error,
-                const boost::spirit::info& info);
     };
-
-    typedef BoostParserAdapter<std::string::const_iterator, CommandArguments,
-        ShellParserImpl> ShellParser;
 }}}
 
-namespace cli { namespace parser
+namespace cli
 {
-    using shellparser::ShellParser;
-}}
+    typedef parser::shellparser::CommandArguments ShellInterpreterArguments;
+    typedef parser::shellparser::ShellInterpreter ShellInterpreter;
+}
 
 #endif /* SHELL_PARSER_HPP_ */

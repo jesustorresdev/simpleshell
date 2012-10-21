@@ -1,7 +1,7 @@
 /*
  * callbacks.hpp - Framework support of callback functions
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 
 #include <boost/function.hpp>
 #include <boost/mpl/assert.hpp>
+#include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/type_traits.hpp>
@@ -43,37 +44,71 @@
 #define CLI_DECLARE_CALLBACKS_FILLER_0_END
 #define CLI_DECLARE_CALLBACKS_FILLER_1_END
 
-#define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)     \
-    typedef cli::callback::                                         \
-        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type    \
-        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);               \
-    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>   \
-        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);
+#define CLI_DECLARE_CALLBACK_MEMBER(r, TYPE, DECLARATION_TUPLE)             \
+    typedef cli::callback::                                                 \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type            \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);                       \
+    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>           \
+        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);				        \
+    template <int N, int M>													\
+    struct SetCallbackImpl<                                                 \
+        cli::callback::BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE), N, M>  \
+    {                                                                       \
+        template <typename T, typename Functor>                             \
+        static void setCallback(T& interpreter, Functor function)           \
+            { interpreter.BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE) =    \
+                function; }                                                 \
+    };
 
-#define CLI_DECLARE_CALLBACK_MEMBER_TPL(r, TYPE, DECLARATION_TUPLE) \
-    typedef typename cli::callback::                                \
-        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type    \
-        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);               \
-    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>   \
-        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);
+#define CLI_DECLARE_CALLBACK_MEMBER_TPL(r, TYPE, DECLARATION_TUPLE)         \
+    typedef typename cli::callback::                                        \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type            \
+        BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);                       \
+    boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>           \
+        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);                       \
+    template <int N, int M>                                                 \
+    struct SetCallbackImpl<                                                 \
+        cli::callback::BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE), N, M>  \
+    {                                                                       \
+        template <typename T, typename Functor>                             \
+        static void setCallback(T& interpreter, Functor function)           \
+            { interpreter.BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE) =    \
+                function; }                                                 \
+    };
 
 #define CLI_DECLARE_CALLBACKS(TYPE, DECLARATIONS_SEQ)               \
+    template <template <typename> class Callback, int N, int M> 	\
+    struct SetCallbackImpl											\
+    {																\
+        template <typename T, typename Functor>						\
+        static void setCallback(T& interpreter, Functor function)	\
+        {															\
+            throw cli::exception::UnknownCallbackException(			\
+                Callback<T>::name());								\
+        }															\
+    };																\
     BOOST_PP_SEQ_FOR_EACH(                                          \
         CLI_DECLARE_CALLBACK_MEMBER,                                \
         TYPE,                                                       \
         BOOST_PP_CAT(                                               \
-            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END)) \
-    template <template <typename> class Callback>                   \
-    friend class cli::callback::SetCallbackImpl;
+            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END))
 
 #define CLI_DECLARE_CALLBACKS_TPL(TYPE, DECLARATIONS_SEQ)           \
+    template <template <typename> class Callback, int N, int M> 	\
+    struct SetCallbackImpl											\
+    {																\
+        template <typename T, typename Functor>						\
+        static void setCallback(T& interpreter, Functor function)	\
+        {															\
+            throw cli::exception::UnknownCallbackException(			\
+                Callback<T>::name());								\
+        }															\
+    };																\
     BOOST_PP_SEQ_FOR_EACH(                                          \
         CLI_DECLARE_CALLBACK_MEMBER_TPL,                            \
         TYPE,                                                       \
         BOOST_PP_CAT(                                               \
-            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END)) \
-    template <template <typename> class Callback>                   \
-    friend class cli::callback::SetCallbackImpl;
+            CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END))
 
 //
 // Macro CLI_CALLBACK_SIGNATURE_ASSERT & CLI_CALLBACK_SIGNATURE_ASSERT_TPL
@@ -92,21 +127,6 @@
 namespace cli { namespace callback
 {
     //
-    // Base template for callback function setter implementation
-    //
-
-    template <template <typename> class Callback>
-    struct SetCallbackImpl
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-        {
-            throw cli::exception::UnknownCallbackException(
-                Callback<T>::name());
-        }
-    };
-
-    //
     // DoCommandCallback
     //
 
@@ -114,20 +134,8 @@ namespace cli { namespace callback
     struct DoCommandCallback
     {
         typedef bool (Type)(const std::string&,
-            typename T::CommandArgumentsType const&);
+            typename T::ArgumentsType const&);
         static const char* name() { return "DoCommandCallback"; }
-    };
-
-    template <>
-    struct SetCallbackImpl<DoCommandCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.defaultDoCommandCallback_ = function; }
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function,
-            const std::string& command)
-            { interpreter.doCommandCallbacks_[command] = function; }
     };
 
     //
@@ -141,14 +149,6 @@ namespace cli { namespace callback
         static const char* name() { return "EmptyLineCallback"; }
     };
 
-    template <>
-    struct SetCallbackImpl<EmptyLineCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.emptyLineCallback_ = function; }
-    };
-
     //
     // PreDoCommandCallback
     //
@@ -158,14 +158,6 @@ namespace cli { namespace callback
     {
         typedef void (Type)(std::string&);
         static const char* name() { return "PreDoCommandCallback"; }
-    };
-
-    template <>
-    struct SetCallbackImpl<PreDoCommandCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.preDoCommandCallback_ = function; }
     };
 
     //
@@ -179,32 +171,16 @@ namespace cli { namespace callback
         static const char* name() { return "PostDoCommandCallback"; }
     };
 
-    template <>
-    struct SetCallbackImpl<PostDoCommandCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.postDoCommandCallback_ = function; }
-    };
-
     //
-    // ParserErrorCallback
+    // ParseErrorCallback
     //
 
     template <typename T>
-    struct ParserErrorCallback
+    struct ParseErrorCallback
     {
-            typedef bool (Type)(typename T::ParserErrorType const&,
+            typedef bool (Type)(typename T::ParseErrorType const&,
                 const std::string&);
-            static const char* name() { return "ParserErrorCallback"; }
-    };
-
-    template <>
-    struct SetCallbackImpl<ParserErrorCallback>
-    {
-            template <typename T, typename Functor>
-            static void setCallback(T& interpreter, Functor function)
-            { interpreter.parserErrorCallback_ = function; }
+            static const char* name() { return "ParseErrorCallback"; }
     };
 
     //
@@ -218,14 +194,6 @@ namespace cli { namespace callback
         static const char* name() { return "PreLoopCallback"; }
     };
 
-    template <>
-    struct SetCallbackImpl<PreLoopCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.preLoopCallback_ = function; }
-    };
-
     //
     // PostLoopCallback
     //
@@ -235,14 +203,6 @@ namespace cli { namespace callback
     {
         typedef void (Type)();
         static const char* name() { return "PostLoopCallback"; }
-    };
-
-    template <>
-    struct SetCallbackImpl<PostLoopCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.postLoopCallback_ = function; }
     };
 
     //
@@ -256,14 +216,6 @@ namespace cli { namespace callback
         static const char* name() { return "VariableLookupCallback"; }
     };
 
-    template <>
-    struct SetCallbackImpl<VariableLookupCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.lineParser_->variableLookupCallback_ = function; }
-    };
-
     //
     // PathnameExpansionCallback
     //
@@ -273,14 +225,6 @@ namespace cli { namespace callback
     {
         typedef std::vector<std::string> (Type)(const std::string&);
         static const char* name() { return "PathnameExpansionCallback"; }
-    };
-
-    template <>
-    struct SetCallbackImpl<PathnameExpansionCallback>
-    {
-        template <typename T, typename Functor>
-        static void setCallback(T& interpreter, Functor function)
-            { interpreter.lineParser_->pathnameExpansionCallback_ = function; }
     };
 }}
 

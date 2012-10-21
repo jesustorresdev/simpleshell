@@ -25,7 +25,7 @@
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
-                          "Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>\n";
+                          "Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>\n";
 
 const char PROMPT_TEXT[] = "$ ";
 
@@ -40,9 +40,10 @@ const char PROMPT_TEXT[] = "$ ";
 //
 
 bool exitCommandCallback(const std::string& command,
-    cli::parser::shellparser::CommandArguments const& arguments)
+    cli::ShellInterpreterArguments const& arguments)
 {
     return true;
+    // cli::parser::shellparser::CommandArguments const&
 }
 
 //
@@ -56,10 +57,11 @@ bool exitCommandCallback(const std::string& command,
 //
 
 bool defaultCommandCallback(const std::string& command,
-    cli::parser::shellparser::CommandArguments const& arguments)
+    cli::ShellInterpreterArguments const& arguments)
 {
     std::cout << command << ": ";
     std::cout << arguments << std::endl;
+    //cli::parser::shellparser::CommandArguments
     return false;
 }
 
@@ -70,7 +72,7 @@ bool defaultCommandCallback(const std::string& command,
 int main(int argc, char** argv)
 {
     // Create the interpreter object with the ShellParser parser
-    cli::CommandLineInterpreter<cli::parser::ShellParser> interpreter;
+    cli::ShellInterpreter interpreter;
 
     // Set the intro and prompt texts
     interpreter.setIntroText(INTRO_TEXT);

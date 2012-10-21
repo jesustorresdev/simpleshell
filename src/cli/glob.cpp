@@ -1,7 +1,7 @@
 /*
  * glob.cpp - Find pathnames matching a pattern
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,10 +86,10 @@ namespace glob
     {
         std::string escaped;
 
-        for (std::string::const_iterator iter = pattern.begin();
-            iter < pattern.end(); ++iter)
+        for (std::string::const_iterator i = pattern.begin();
+            i < pattern.end(); ++i)
         {
-            switch (*iter) {
+            switch (*i) {
             case '~':   // EXPAND_TILDE
             case '*':
             case '?':
@@ -97,7 +97,7 @@ namespace glob
             case '\\':
                 escaped.push_back('\\');
             default:
-                escaped.push_back(*iter);
+                escaped.push_back(*i);
             }
         }
 

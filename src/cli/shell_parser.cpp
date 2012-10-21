@@ -20,6 +20,7 @@
 
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
@@ -62,7 +63,7 @@ namespace cli { namespace parser { namespace shellparser
     namespace phoenix = boost::phoenix;
 
     //
-    // Class ShellParserImpl
+    // Class ShellParser
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
@@ -70,8 +71,9 @@ namespace cli { namespace parser { namespace shellparser
     //
 
     template <typename Iterator>
-    ShellParserImpl<Iterator>::ShellParserImpl()
-        : ShellParserImpl::base_type(start)
+    ShellParser<Iterator>::ShellParser(ShellInterpreter& interpreter)
+        : ShellParser::base_type(start),
+          interpreter_(interpreter)
     {
         using qi::_1;
         using qi::_2;
@@ -111,7 +113,8 @@ namespace cli { namespace parser { namespace shellparser
             eps[_a = false] >>
             dereference >> (
                 -lit('{')[_a = true] >
-                name[_val = bind(&ShellParserImpl::variableLookup, *this, _1)]
+                name[_val = bind(
+                    &ShellInterpreter::variableLookup, interpreter_, _1)]
             ) >> ((eps(_a) > '}') | eps(!_a));
 
         quotedString %= '\'' >> *(char_ - '\'') > '\'';
@@ -128,18 +131,19 @@ namespace cli { namespace parser { namespace shellparser
         word = +(
             variable                    [_val += _1]          |
             quotedString
-                [_val += bind(&ShellParserImpl::globEscape, _1)]  |
+                [_val += bind(&ShellParser::globEscape, _1)]  |
             doubleQuotedString
-                [_val += bind(&ShellParserImpl::globEscape, _1)]  |
+                [_val += bind(&ShellParser::globEscape, _1)]  |
             escape                      [push_back(_val, _1)] |
             (char_ - space - special)   [push_back(_val, _1)]
         );
 
         expandedWord = word
-            [_val = bind(&ShellParserImpl::pathnameExpansion, *this, _1)];
+            [_val = bind(
+                &ShellInterpreter::pathnameExpansion, interpreter_, _1)];
 
         variableValue = expandedWord
-            [_val = bind(&ShellParserImpl::stringsJoin, _1)];
+            [_val = bind(&ShellParser::stringsJoin, _1)];
 
         unambiguousRedirection = eps(_r1);
         redirectionArgument = (
@@ -179,10 +183,6 @@ namespace cli { namespace parser { namespace shellparser
         eol.name(translate("end-of-line"));
         neol.name(translate("more characters"));
 
-        on_error<fail>(
-            start, bind(&ShellParserImpl::throwParserError, _1, _2, _3, _4)
-        );
-
 //      BOOST_SPIRIT_DEBUG_NODE(name);
 //      BOOST_SPIRIT_DEBUG_NODE(variable);
 //      BOOST_SPIRIT_DEBUG_NODE(quotedString);
@@ -196,16 +196,36 @@ namespace cli { namespace parser { namespace shellparser
         BOOST_SPIRIT_DEBUG_NODE(start);
     }
 
-    template <typename Iterator>
-    std::string ShellParserImpl<Iterator>::variableLookup(
-        const std::string& name)
-    {
+    //
+    // Explicit instantiations of ShellParser class
+    //
+
+    template class ShellParser<std::string::const_iterator>;
+
+    //
+    // Class ShellInterpreter
+    //
+    // Interpreter which uses ShellParser to parse the command line.
+    //
+
+    ShellInterpreter::ShellInterpreter(bool useReadline)
+        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
+            useReadline)
+    {}
+
+    ShellInterpreter::ShellInterpreter(std::istream& in, std::ostream& out,
+        std::ostream& err, bool useReadline)
+        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
+            in, out, err, useReadline)
+    {}
+
+    std::string ShellInterpreter::variableLookup(const std::string& name)
+        {
         return variableLookupCallback_.empty() ?
             std::string() : variableLookupCallback_(name);
-    }
+        }
 
-    template <typename Iterator>
-    std::vector<std::string> ShellParserImpl<Iterator>::pathnameExpansion(
+    std::vector<std::string> ShellInterpreter::pathnameExpansion(
         const std::string& pattern)
     {
         if (! pathnameExpansionCallback_.empty()) {
@@ -218,39 +238,19 @@ namespace cli { namespace parser { namespace shellparser
             Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE_WITH_CHECK);
 
         Glob::ErrorsType errors = glob.getErrors();
-        for (Glob::ErrorsType::const_iterator iter = errors.begin();
-            iter < errors.end(); ++iter)
+        for (Glob::ErrorsType::const_iterator i = errors.begin();
+            i < errors.end(); ++i)
         {
             std::cerr
                 << ::program_invocation_short_name
                 << ": "
                 << translate("i/o error at")
                 << " "
-                << iter->first
+                << i->first
                 << ": "
-                << iter->second.message();
+                << i->second.message();
         }
 
         return glob;
     }
-
-    template <typename Iterator>
-    void ShellParserImpl<Iterator>::throwParserError(const Iterator& first,
-        const Iterator& last, const Iterator& error,
-        const boost::spirit::info& info)
-    {
-        std::string what;
-        what += translate("syntax error, expecting");
-        what += " " + info.tag + " " + translate("at") + ": ";
-        what += (error == last) ? translate("<end-of-line>")
-            : std::string(error, last);
-
-        throw BoostParserError<Iterator>(what, first, last, error, info);
-    }
-
-    //
-    // Explicit instantiations of ShellParserImpl class
-    //
-
-    template class ShellParserImpl<std::string::const_iterator>;
 }}}

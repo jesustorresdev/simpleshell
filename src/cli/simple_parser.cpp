@@ -19,7 +19,7 @@
 
 //#define BOOST_SPIRIT_DEBUG
 
-#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -27,7 +27,6 @@
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
-#include <cli/boost_parser_adapter.hpp>
 #include <cli/simple_parser.hpp>
 
 namespace cli { namespace parser { namespace simpleparser
@@ -37,7 +36,7 @@ namespace cli { namespace parser { namespace simpleparser
     namespace phoenix = boost::phoenix;
 
     //
-    // Class SimpleParserImpl
+    // Class SimpleParser
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
@@ -45,8 +44,8 @@ namespace cli { namespace parser { namespace simpleparser
     //
 
     template <typename Iterator>
-    SimpleParserImpl<Iterator>::SimpleParserImpl()
-        : SimpleParserImpl::base_type(start)
+    SimpleParser<Iterator>::SimpleParser()
+        : SimpleParser::base_type(start)
     {
         using qi::_1;
         using qi::_2;
@@ -61,7 +60,6 @@ namespace cli { namespace parser { namespace simpleparser
         using iso8859_1::space;
         using phoenix::at;
         using phoenix::at_c;
-        using phoenix::bind;
 
         eol = eoi;
         character %= char_;
@@ -76,10 +74,6 @@ namespace cli { namespace parser { namespace simpleparser
         character.name(translate("character"));
         eol.name(translate("end-of-line"));
 
-        on_error<fail>(
-            start, bind(&SimpleParserImpl::throwParserError, _1, _2, _3, _4)
-        );
-
 //      BOOST_SPIRIT_DEBUG_NODE(word);
 //      BOOST_SPIRIT_DEBUG_NODE(quotedString);
 //      BOOST_SPIRIT_DEBUG_NODE(doubleQuotedString);
@@ -87,23 +81,26 @@ namespace cli { namespace parser { namespace simpleparser
         BOOST_SPIRIT_DEBUG_NODE(start);
     }
 
-    template <typename Iterator>
-    void SimpleParserImpl<Iterator>::throwParserError(const Iterator& first,
-        const Iterator& last, const Iterator& error,
-        const boost::spirit::info& info)
-    {
-        std::string what;
-        what += translate("syntax error, expecting");
-        what += " " + info.tag + " " + translate("at") + ": ";
-        what += (error == last) ? translate("<end-of-line>")
-            : std::string(error, last);
-
-        throw BoostParserError<Iterator>(what, first, last, error, info);
-    }
-
     //
-    // Explicit instantiations of SimpleParserImpl class
+    // Explicit instantiations of SimpleParser class
     //
 
-    template class SimpleParserImpl<std::string::const_iterator>;
+    template class SimpleParser<std::string::const_iterator>;
+
+    //
+    // Class SimpleInterpreter
+    //
+    // Interpreter which uses SimpleParser to parse the command line.
+    //
+
+    SimpleInterpreter::SimpleInterpreter(bool useReadline)
+        : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
+            useReadline)
+    {}
+
+    SimpleInterpreter::SimpleInterpreter(std::istream& in, std::ostream& out,
+        std::ostream& err, bool useReadline)
+        : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
+            in, out, err, useReadline)
+    {}
 }}}
