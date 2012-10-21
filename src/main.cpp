@@ -20,8 +20,7 @@
 #include <string>
 
 #include <cli/callbacks.hpp>
-#include <cli/cli.hpp>
-#include <cli/parsers.hpp>
+#include <cli/shell.hpp>
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
@@ -35,15 +34,14 @@ const char PROMPT_TEXT[] = "$ ";
 //
 // If this function returns true, the interpreter ends.
 //
-// See include/cli/shell_parser.hpp for
-// cli::parser::shellparser::CommandArguments definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::
+// CommandArguments. See include/cli/shell.hpp for its definition.
 //
 
 bool exitCommandCallback(const std::string& command,
-    cli::ShellInterpreterArguments const& arguments)
+    cli::ShellArguments const& arguments)
 {
     return true;
-    // cli::parser::shellparser::CommandArguments const&
 }
 
 //
@@ -52,16 +50,50 @@ bool exitCommandCallback(const std::string& command,
 //
 // If this function returns true, the interpreter ends.
 //
-// See include/cli/shell_parser.hpp for
-// cli::parser::shellparser::CommandArguments definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::
+// CommandArguments. See include/cli/shell.hpp for its definition:
+//
+//    struct CommandArguments
+//    {
+//        enum TypeOfTerminator
+//        {
+//            NORMAL,             // command ;
+//            BACKGROUNDED,       // command &
+//            PIPED               // command1 | command2
+//        };
+//
+//        std::vector<VariableAssignment> variables;
+//        std::vector<std::string> arguments;
+//        std::vector<StdioRedirection> redirections;
+//        TypeOfTerminator terminator;
+//        ...
+//    };
+//
+//    struct VariableAssignment
+//    {
+//        std::string name;
+//        std::string value;
+//    };
+//
+//    struct StdioRedirection
+//    {
+//        enum TypeOfRedirection
+//        {
+//            INPUT,              // command < filename
+//            TRUNCATED_OUTPUT,   // command > filename
+//            APPENDED_OUTPUT     // command >> filename
+//        };
+//
+//        TypeOfRedirection type;
+//        std::string argument;
+//    };
 //
 
 bool defaultCommandCallback(const std::string& command,
-    cli::ShellInterpreterArguments const& arguments)
+    cli::ShellArguments const& arguments)
 {
     std::cout << command << ": ";
     std::cout << arguments << std::endl;
-    //cli::parser::shellparser::CommandArguments
     return false;
 }
 
@@ -71,7 +103,7 @@ bool defaultCommandCallback(const std::string& command,
 
 int main(int argc, char** argv)
 {
-    // Create the interpreter object with the ShellParser parser
+    // Create the shell-like interpreter
     cli::ShellInterpreter interpreter;
 
     // Set the intro and prompt texts

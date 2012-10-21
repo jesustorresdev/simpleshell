@@ -1,5 +1,5 @@
 /*
- * shell_parser.cpp - Parser designed to emulate a very simple shell
+ * shell.cpp - Interpreter designed to emulate a very simple shell
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -29,7 +29,7 @@
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
-#include <cli/shell_parser.hpp>
+#include <cli/shell.hpp>
 
 //
 // Adaptors from CommandArguments classes to Boost.Fusion sequences. They are
@@ -201,11 +201,15 @@ namespace cli { namespace parser { namespace shellparser
     //
 
     template class ShellParser<std::string::const_iterator>;
+}}}
 
+namespace cli
+{
     //
     // Class ShellInterpreter
     //
-    // Interpreter which uses ShellParser to parse the command line.
+    // Interpreter which uses ShellParser to parse the command line, emulating
+    // a very simple shell.
     //
 
     ShellInterpreter::ShellInterpreter(bool useReadline)
@@ -253,4 +257,4 @@ namespace cli { namespace parser { namespace shellparser
 
         return glob;
     }
-}}}
+}

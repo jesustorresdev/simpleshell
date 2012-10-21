@@ -1,6 +1,6 @@
 /*
- * cli.cpp - Simple line-oriented command interpreter which imitates the
- *           cmd.Cmd python class behavior
+ * ccommand.hpp - Simple line-oriented command interpreter which imitates the
+ *                cmd.Cmd python class behavior
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -17,32 +17,33 @@
  * limitations under the License.
  */
 
-#include <algorithm>
+#ifndef COMMAND_HPP_
+#define COMMAND_HPP_
+
 #include <string>
 
 #include <cli/base.hpp>
-#include <cli/cli.hpp>
 
 namespace cli
 {
     //
-    // Class CommandLineInterpreter
+    // Class CommandInterpreter
     //
 
-    ParseError& CommandLineInterpreter::parse(
-        std::string::const_iterator& begin, std::string::const_iterator end,
-        std::string& command, std::string& arguments)
+    class CommandInterpreter
+        : public CommandLineInterpreterBase<std::string>
     {
-        std::string::const_iterator i = find(begin, end, ' ');
-        command = std::string(begin, i);
-        if (i == end) {
-            arguments.clear();
-        }
-        else {
-            arguments = std::string(i + 1, end);
-        }
-        begin = end;
+        //
+        // Parser handling
+        //
 
-        return parseError_;
-    }
+        ParseError& parse(std::string::const_iterator& begin,
+            std::string::const_iterator end, std::string& command,
+            std::string& arguments);
+
+        private:
+            ParseError parseError_;
+    };
 }
+
+#endif /* COMMAND_HPP_ */

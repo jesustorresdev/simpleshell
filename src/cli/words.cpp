@@ -1,6 +1,6 @@
 /*
- * simple_parser.cpp - Parser that only splits the command arguments and
- *                     supports quoted strings
+ * words.cpp - Interpreter that only splits the command arguments in words.
+ *             It supports quoted strings
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -27,16 +27,16 @@
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
-#include <cli/simple_parser.hpp>
+#include <cli/words.hpp>
 
-namespace cli { namespace parser { namespace simpleparser
+namespace cli { namespace parser { namespace wordsparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace phoenix = boost::phoenix;
 
     //
-    // Class SimpleParser
+    // Class WordsParser
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
@@ -44,8 +44,8 @@ namespace cli { namespace parser { namespace simpleparser
     //
 
     template <typename Iterator>
-    SimpleParser<Iterator>::SimpleParser()
-        : SimpleParser::base_type(start)
+    WordsParser<Iterator>::WordsParser()
+        : WordsParser::base_type(start)
     {
         using qi::_1;
         using qi::_2;
@@ -82,25 +82,30 @@ namespace cli { namespace parser { namespace simpleparser
     }
 
     //
-    // Explicit instantiations of SimpleParser class
+    // Explicit instantiations of WordsParser class
     //
 
-    template class SimpleParser<std::string::const_iterator>;
+    template class WordsParser<std::string::const_iterator>;
+}}}
+
+namespace cli
+{
+    using namespace cli::parser::wordsparser;
 
     //
-    // Class SimpleInterpreter
+    // Class WordsInterpreter
     //
-    // Interpreter which uses SimpleParser to parse the command line.
+    // Interpreter which uses WordsParser to parse the command line.
     //
 
-    SimpleInterpreter::SimpleInterpreter(bool useReadline)
+    WordsInterpreter::WordsInterpreter(bool useReadline)
         : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
             useReadline)
     {}
 
-    SimpleInterpreter::SimpleInterpreter(std::istream& in, std::ostream& out,
+    WordsInterpreter::WordsInterpreter(std::istream& in, std::ostream& out,
         std::ostream& err, bool useReadline)
         : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
             in, out, err, useReadline)
     {}
-}}}
+}

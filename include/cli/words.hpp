@@ -1,6 +1,6 @@
 /*
- * simple_parser.hpp - Parser that only splits the command arguments and
- *                     supports quoted strings
+ * words.hpp - Interpreter that only splits the command arguments in words.
+ *             It supports quoted strings
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef SIMPLE_PARSER_HPP_
-#define SIMPLE_PARSER_HPP_
+#ifndef WORDS_HPP_
+#define WORDS_HPP_
 
 #include <iostream>
 #include <string>
@@ -30,7 +30,7 @@
 #include <cli/auxiliary.hpp>
 #include <cli/basic_spirit.hpp>
 
-namespace cli { namespace parser { namespace simpleparser
+namespace cli { namespace parser { namespace wordsparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
@@ -39,7 +39,7 @@ namespace cli { namespace parser { namespace simpleparser
     typedef std::vector<std::string> CommandArguments;
 
     //
-    // Class SimpleParser
+    // Class WordsParser
     //
     // The parser must return a two-references Sequence. They have to refer to
     // the name and the arguments of parsed command respectively.
@@ -50,12 +50,12 @@ namespace cli { namespace parser { namespace simpleparser
     //
 
     template <typename Iterator>
-    struct SimpleParser
+    struct WordsParser
         : qi::grammar<Iterator,
               fusion::vector<std::string&, CommandArguments&>(),
               iso8859_1::space_type>
     {
-        SimpleParser();
+        WordsParser();
 
         //
         // Parser rules
@@ -72,30 +72,31 @@ namespace cli { namespace parser { namespace simpleparser
         qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
             iso8859_1::space_type> start;
     };
-
-    //
-    // Class SimpleInterpreter
-    //
-    // Interpreter which uses SimpleParser to parse the command line.
-    //
-
-    class SimpleInterpreter
-    : public BasicSpiritInterpreter<CommandArguments, SimpleParser>
-    {
-        public:
-            typedef BasicSpiritInterpreter<CommandArguments, SimpleParser>
-                BaseType;
-
-            SimpleInterpreter(bool useReadline = true);
-            SimpleInterpreter(std::istream& in, std::ostream& out,
-                std::ostream& err, bool useReadline = true);
-    };
 }}}
 
 namespace cli
 {
-    typedef parser::simpleparser::CommandArguments SimpleInterpreterArguments;
-    typedef parser::simpleparser::SimpleInterpreter SimpleInterpreter;
+    using namespace cli::parser::wordsparser;
+
+    typedef CommandArguments WordsArguments;
+
+    //
+    // Class WordsInterpreter
+    //
+    // Interpreter which uses WordsParser to parse the command line.
+    //
+
+    class WordsInterpreter
+    : public BasicSpiritInterpreter<WordsArguments, WordsParser>
+    {
+        public:
+            typedef BasicSpiritInterpreter<CommandArguments, WordsParser>
+                BaseType;
+
+            WordsInterpreter(bool useReadline = true);
+            WordsInterpreter(std::istream& in, std::ostream& out,
+                std::ostream& err, bool useReadline = true);
+    };
 }
 
-#endif /* SIMPLE_PARSER_HPP_ */
+#endif /* WORDS_HPP_ */

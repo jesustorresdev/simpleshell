@@ -1,5 +1,5 @@
 /*
- * shell_parser.hpp - Parser designed to emulate a very simple shell
+ * shell.hpp - Interpreter designed to emulate a very simple shell
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef SHELL_PARSER_HPP_
-#define SHELL_PARSER_HPP_
+#ifndef SHELL_HPP_
+#define SHELL_HPP_
 
 #include <iostream>
 #include <string>
@@ -31,13 +31,16 @@
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
 
+namespace cli
+{
+    class ShellInterpreter;
+}
+
 namespace cli { namespace parser { namespace shellparser
 {
     namespace qi = boost::spirit::qi;
     namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace fusion = boost::fusion;
-
-    class ShellInterpreter;
 
     //
     // Class CommandArguments
@@ -214,18 +217,26 @@ namespace cli { namespace parser { namespace shellparser
             static std::string stringsJoin(const std::vector<std::string>& v)
                 { return boost::algorithm::join(v, std::string(1, ' ')); }
     };
+}}}
+
+namespace cli
+{
+    using namespace cli::parser::shellparser;
+
+    typedef CommandArguments ShellArguments;
 
     //
     // Class ShellInterpreter
     //
-    // Interpreter which uses ShellParser to parse the command line.
+    // Interpreter which uses ShellParser to parse the command line, emulating
+    // a very simple shell.
     //
 
     class ShellInterpreter
-        : public BasicSpiritInterpreter<CommandArguments, ShellParser>
+        : public BasicSpiritInterpreter<ShellArguments, ShellParser>
     {
         public:
-            typedef BasicSpiritInterpreter<CommandArguments, ShellParser>
+            typedef BasicSpiritInterpreter<ShellArguments, ShellParser>
                 BaseType;
 
             ShellInterpreter(bool useReadline = true);
@@ -250,12 +261,6 @@ namespace cli { namespace parser { namespace shellparser
                 (PathnameExpansionCallback, pathnameExpansionCallback_)
             )
     };
-}}}
-
-namespace cli
-{
-    typedef parser::shellparser::CommandArguments ShellInterpreterArguments;
-    typedef parser::shellparser::ShellInterpreter ShellInterpreter;
 }
 
-#endif /* SHELL_PARSER_HPP_ */
+#endif /* SHELL_HPP_ */
