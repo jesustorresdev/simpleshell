@@ -47,9 +47,6 @@ SET(DOCUMENTATION_SYSTEM_INPUT_LIST "src"
 #
 SET(Boost_USE_STATIC_LIBS OFF)
 SET(Boost_USE_MULTITHREADED ON)
-SET(Boost_ADDITIONAL_VERSIONS "1.41" "1.41.0" "1.42" "1.42.0" "1.43" "1.43.0"
-                              "1.44" "1.44.0" "1.45" "1.45.0" "1.46" "1.46.0"
-                              "1.46.1")
 FIND_PACKAGE(Boost 1.44.0 REQUIRED COMPONENTS system thread)
 IF (Boost_FOUND)
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
