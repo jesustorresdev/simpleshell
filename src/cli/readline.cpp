@@ -23,7 +23,7 @@
 
 #include <boost/system/system_error.hpp>
 
-#include <cli/internals.hpp>
+#include <cli/detail/utility.hpp>
 #include <cli/readline.hpp>
 
 #include "fileno.hpp"
@@ -48,7 +48,8 @@ namespace cli { namespace readline
     // Class ReadlineLibrary
     //
 
-    ReadlineLibrary::ReadlineLibrary() : dl::DynamicLibrary()
+    ReadlineLibrary::ReadlineLibrary() : dl::DynamicLibrary(),
+        rl_instream_(NULL), rl_outstream_(NULL)
     {
         // Try to load some readline libray
         for (const char** library = LIBREADLINE_FILENAMES; *library != NULL;
@@ -205,7 +206,7 @@ namespace cli { namespace readline
     {
         if (readlineLibrary_) {
             bool isOk = readlineLibrary_->readLine(line, prompt);
-            if (isOk && (! internals::isLineEmpty(line))) {
+            if (isOk && (! utility::detail::isLineEmpty(line))) {
                 readlineLibrary_->addHistory(line);
             }
             return isOk;
@@ -228,7 +229,6 @@ namespace cli { namespace readline
             readlineLibrary_->setInStream(in);
             std::error_code errorCode = readlineLibrary_->getLastError();
             if (errorCode != std::errc::success) {
-                // TODO: error setting I/O stream for input.
                 throw std::system_error(errorCode,
                     "unexpected error changing readline input stream");
             }

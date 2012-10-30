@@ -25,7 +25,7 @@
 
 #include <boost/filesystem.hpp>
 
-#include <cli/internals.hpp>
+#include <cli/detail/utility.hpp>
 
 namespace glob
 {

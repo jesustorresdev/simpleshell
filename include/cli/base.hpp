@@ -30,8 +30,8 @@
 #include <boost/function.hpp>
 
 #include <cli/callbacks.hpp>
-#include <cli/internals.hpp>
 #include <cli/readline.hpp>
+#include <cli/utility.hpp>
 
 namespace cli
 {
@@ -226,10 +226,12 @@ namespace cli
     template <typename Arguments>
     void CommandLineInterpreterBase<Arguments>::loop()
     {
+        using utility::detail::isStreamTty;
+
         preLoop();
 
         std::string promptText;
-        if (internals::isStreamTty(in_) && internals::isStreamTty(out_)) {
+        if (isStreamTty(in_) && isStreamTty(out_)) {
             out_ << introText_ << std::endl;
             promptText = promptText_;
         }
@@ -253,7 +255,7 @@ namespace cli
     {
         preDoCommand(line);
 
-        if (internals::isLineEmpty(line)) {
+        if (utility::detail::isLineEmpty(line)) {
             return emptyLine();
         }
         else {

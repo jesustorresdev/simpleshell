@@ -1,5 +1,5 @@
 /*
- * auxiliary.cpp - Auxiliary public functions
+ * utility.cpp - Components useful to other parts of the library
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,17 +16,22 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <cstring>
+#include <ios>
+#include <locale>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 #include <boost/shared_array.hpp>
 
-#include <cli/auxiliary.hpp>
+#include <cli/detail/utility.hpp>
+#include <cli/utility.hpp>
 
 #include "fileno.hpp"
 
-namespace cli { namespace auxiliary
+namespace cli { namespace utility
 {
     //
     // Functions for std::vector<std::string> to char*[] conversion
@@ -60,4 +65,27 @@ namespace cli { namespace auxiliary
         return boost::shared_array<char*>(stdVectorStringToArgV(strings),
             deleteArgV);
     }
-}}
+
+namespace detail
+{
+    bool isCharNoSpace(char c)
+    {
+        return ! std::isspace(c, std::locale());
+    }
+
+    bool isLineEmpty(const std::string& line)
+    {
+        std::string::const_iterator first;
+        first = std::find_if(line.begin(), line.end(), isCharNoSpace);
+        return first == line.end() ? true : false;
+    }
+
+    bool isStreamTty(const std::ios& stream)
+    {
+        int fd = ::fileno(stream);
+        if (fd >= 0) {
+            return ::isatty(fd) != 0 ? true : false;
+        }
+        return false;
+    }
+}}}

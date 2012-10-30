@@ -25,7 +25,7 @@
 #include <boost/function.hpp>
 #include <boost/type_traits/add_pointer.hpp>
 
-#include <cli/internals.hpp>
+#include <cli/detail/utility.hpp>
 
 namespace dl
 {

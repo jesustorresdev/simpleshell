@@ -1,5 +1,5 @@
 /*
- * auxiliary.hpp - Auxiliary public functions
+ * utility.hpp - Components useful to other parts of the library
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-#ifndef AUXILIARY_HPP_
-#define AUXILIARY_HPP_
+#ifndef UTILITY_HPP_
+#define UTILITY_HPP_
 
-#include <iostream>
+#include <ostream>
 #include <string>
 #include <vector>
 
 #include <boost/shared_array.hpp>
 
-namespace cli { namespace auxiliary
+namespace cli { namespace utility
 {
     char** stdVectorStringToArgV(const std::vector<std::string> &strings);
 
@@ -53,4 +53,4 @@ namespace std
     }
 }
 
-#endif /* AUXILIARY_HPP_ */
+#endif /* UTILITY_HPP_ */

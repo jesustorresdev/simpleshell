@@ -27,8 +27,8 @@
 #include <boost/fusion/include/vector.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <cli/auxiliary.hpp>
 #include <cli/basic_spirit.hpp>
+#include <cli/utility.hpp>
 
 namespace cli { namespace parser { namespace wordsparser
 {

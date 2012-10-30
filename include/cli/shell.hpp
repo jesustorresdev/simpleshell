@@ -26,10 +26,10 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/spirit/include/qi.hpp>
 
-#include <cli/auxiliary.hpp>
 #include <cli/basic_spirit.hpp>
 #include <cli/callbacks.hpp>
 #include <cli/glob.hpp>
+#include <cli/utility.hpp>
 
 namespace cli
 {

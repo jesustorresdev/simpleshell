@@ -1,7 +1,7 @@
 /*
- * internals.hpp - Auxiliary internal functions
+ * utility.hpp - Private components useful to other parts of the library
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,24 @@
  * limitations under the License.
  */
 
-#ifndef INTERALS_HPP_
-#define INTERALS_HPP_
+#ifndef DETAIL_UTILITY_HPP_
+#define DETAIL_UTILITY_HPP_
 
-#include <iostream>
+#include <ios>
 #include <string>
 
 #include <boost/system/error_code.hpp>
 
-namespace cli { namespace internals
+namespace cli { namespace utility { namespace detail
 {
-
     bool isLineEmpty(const std::string& line);
     bool isStreamTty(const std::ios& stream);
 
-}}
+}}}
 
 namespace std
 {
     using namespace boost::system;
 }
 
-#endif /* INTERALS_HPP_ */
+#endif /* DETAIL_UTILITY_HPP_ */

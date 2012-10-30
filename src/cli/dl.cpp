@@ -20,8 +20,8 @@
 
 #define gettext(str) str    // TODO: Use Boost.Locale when available
 
+#include <cli/detail/utility.hpp>
 #include <cli/dl.hpp>
-#include <cli/internals.hpp>
 
 namespace dl
 {

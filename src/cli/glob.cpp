@@ -22,7 +22,7 @@
 
 #include <boost/thread/tss.hpp>
 
-#include <cli/internals.hpp>
+#include <cli/detail/utility.hpp>
 
 namespace glob {
     // onGlobError() must be declared before declaring Glob class
