@@ -111,7 +111,8 @@ namespace dl
             // Error handling
             //
 
-            bool isLoad() const { return libraryHandle_ != NULL; }
+            bool isLoad() const
+                { return libraryHandle_ != NULL; }
 
             std::error_code getLastError() const
                 { return errorCode_; }
