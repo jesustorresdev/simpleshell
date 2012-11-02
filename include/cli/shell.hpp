@@ -95,31 +95,145 @@ namespace cli { namespace parser { namespace shellparser
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& out,
+    operator<<(std::basic_ostream<CharT, Traits>& os,
         const CommandArguments& arguments)
     {
-        return out << "{variables: "    << arguments.variables
-                  << ", arguments: "    << arguments.arguments
-                  << ", redirections: " << arguments.redirections
-                  << ", terminator: "   << arguments.terminator << '}';
+        using namespace cli::prettyprint;
+
+        if (isPrettyprintEnabled(os)) {
+            os << CHART_LITERAL(CharT, "{") << endlAndIndent;
+            os << CHART_LITERAL(CharT, "variables: ")
+                << arguments.variables << CHART_LITERAL(CharT, ",") << endl;
+            os << CHART_LITERAL(CharT, "arguments: ")
+                << arguments.arguments << CHART_LITERAL(CharT, ",") << endl;
+            os << CHART_LITERAL(CharT, "redirections: ")
+                << arguments.redirections << CHART_LITERAL(CharT, ",") << endl;
+            os << CHART_LITERAL(CharT, "terminator: ")
+                << arguments.terminator << endlAndDeindent;
+        }
+        else {
+            os << CHART_LITERAL(CharT, "{");
+            os << CHART_LITERAL(CharT, "variables: ")
+                << arguments.variables << CHART_LITERAL(CharT, ", ");
+            os << CHART_LITERAL(CharT, "arguments: ")
+                << arguments.arguments << CHART_LITERAL(CharT, ", ");
+            os << CHART_LITERAL(CharT, "redirections: ")
+                << arguments.redirections << CHART_LITERAL(CharT, ", ");
+            os << CHART_LITERAL(CharT, "terminator: ")
+                << arguments.terminator;
+        }
+
+        return os << CHART_LITERAL(CharT, '}');
     }
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& out,
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+        CommandArguments::TypeOfTerminator type)
+    {
+        using namespace cli::prettyprint;
+
+        if (isPrettyprintEnabled(os)) {
+            switch (type) {
+            case CommandArguments::NORMAL:
+                os << "CommandArguments::NORMAL";
+                break;
+            case CommandArguments::BACKGROUNDED:
+                os << "CommandArguments::BACKGROUNDED";
+                break;
+            case CommandArguments::PIPED:
+                os << "CommandArguments::PIPED";
+                break;
+            default:
+                os << "UNKNOWN" << '(' << static_cast<int>(type) << ')';
+                break;
+            }
+        }
+        else {
+            os << static_cast<int>(type);
+        }
+
+        return os;
+    }
+
+    template <typename CharT, typename Traits>
+    std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
         const StdioRedirection& redirection)
     {
-        return out << "{type: "     << redirection.type
-                  << ", argument: " << redirection.argument << '}';
+        using namespace cli::prettyprint;
+
+        if (isPrettyprintEnabled(os)) {
+            os << CHART_LITERAL(CharT, "(struct){")
+                << prettyprint::endlAndIndent;
+            os << CHART_LITERAL(CharT, "type: ") << redirection.type
+                << CHART_LITERAL(CharT, ",") << endl;
+            os << CHART_LITERAL(CharT, "argument: ") << redirection.argument
+                << endlAndDeindent;
+        }
+        else {
+            os << CHART_LITERAL(CharT, "{");
+            os << CHART_LITERAL(CharT, "type: ") << redirection.type
+                << CHART_LITERAL(CharT, ", ");
+            os << CHART_LITERAL(CharT, "argument: ") << redirection.argument;
+        }
+
+        return os << CHART_LITERAL(CharT, '}');
     }
 
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& out,
+    operator<<(std::basic_ostream<CharT, Traits>& os,
+        StdioRedirection::TypeOfRedirection type)
+    {
+        using namespace cli::prettyprint;
+
+        if (isPrettyprintEnabled(os)) {
+            switch (type) {
+            case StdioRedirection::INPUT:
+                os << "StdioRedirection::INPUT";
+                break;
+            case StdioRedirection::TRUNCATED_OUTPUT:
+                os << "StdioRedirection::TRUNCATED_OUTPUT";
+                break;
+            case StdioRedirection::APPENDED_OUTPUT:
+                os << "StdioRedirection::APPENDED_OUTPUT";
+                break;
+            default:
+                os << "UNKNOWN" << '(' << static_cast<int>(type) << ')';
+                break;
+            }
+        }
+        else {
+            os << static_cast<int>(type);
+        }
+
+        return os;
+    }
+
+    template <typename CharT, typename Traits>
+    std::basic_ostream<CharT, Traits>&
+    operator<<(std::basic_ostream<CharT, Traits>& os,
         const VariableAssignment& variable)
     {
-        return out << "{name: "  << variable.name
-                  << ", value: " << variable.value << '}';
+        using namespace cli::prettyprint;
+
+        if (isPrettyprintEnabled(os)) {
+            os << CHART_LITERAL(CharT, "(struct){")
+                << prettyprint::endlAndIndent;
+            os << CHART_LITERAL(CharT, "name: ") << variable.name
+                << CHART_LITERAL(CharT, ",") << endl;
+            os << CHART_LITERAL(CharT, "value: ") << variable.value
+                << endlAndDeindent;
+        }
+        else {
+            os << CHART_LITERAL(CharT, "{");
+            os << CHART_LITERAL(CharT, "name: ") << variable.name
+                << CHART_LITERAL(CharT, ", ");
+            os << CHART_LITERAL(CharT, "value: ") << variable.value;
+        }
+
+        return os << CHART_LITERAL(CharT, '}');
     }
 
     //

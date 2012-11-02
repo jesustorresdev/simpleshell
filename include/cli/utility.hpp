@@ -19,37 +19,65 @@
 #ifndef UTILITY_HPP_
 #define UTILITY_HPP_
 
+#include <cwchar>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include <boost/shared_array.hpp>
 
+#include <cli/chart_literal.hpp>
+#include <cli/prettyprint.hpp>
+
 namespace cli { namespace utility
 {
+    //
+    // Functions for std::vector<std::string> to char*[] conversion
+    //
+
     char** stdVectorStringToArgV(const std::vector<std::string> &strings);
 
     boost::shared_array<char*> stdVectorStringToSmartArgV(
         const std::vector<std::string> &strings);
 }}
 
+//
+// Insert operator overload to provide support to print std::vector containers
+//
+
 namespace std
 {
     template <typename CharT, typename Traits, typename T, typename Alloc>
-    basic_ostream<CharT, Traits>& operator<<(basic_ostream<CharT, Traits>& out,
+    basic_ostream<CharT, Traits>& operator<<(basic_ostream<CharT, Traits>& os,
         const vector<T, Alloc>& vector)
     {
-        out << "[";
+        using namespace cli;
 
-        typename std::vector<T, Alloc>::const_iterator i = vector.begin();
-        if (i != vector.end()) {
-            out << *i;
-            for (i += 1; i < vector.end(); ++i) {
-                out << ", " << *i;
+        typename std::vector<T, Alloc>::const_iterator j = vector.begin();
+        if (prettyprint::isPrettyprintEnabled(os)) {
+            os << CHART_LITERAL(CharT, "(vector)[");
+            if (j != vector.end()) {
+                os << prettyprint::endlAndIndent;
+                os << CHART_LITERAL(CharT, "[0]: ") << *(j++);
+                for (int i = 1; j < vector.end(); ++i, ++j) {
+                    os << CHART_LITERAL(CharT, ",") << prettyprint::endl;
+                    os << CHART_LITERAL(CharT, "[") << i
+                        << CHART_LITERAL(CharT, "]: ") << *j;
+                }
+                os << prettyprint::endlAndDeindent;
+            }
+        }
+        else {
+            os << CHART_LITERAL(CharT, "[");
+            if (j != vector.end()) {
+                os << *j;
+                for (j += 1; j < vector.end(); ++j) {
+                    os << CHART_LITERAL(CharT, ", ") << *j;
+                }
             }
         }
 
-        return out << "]";
+        return os << CHART_LITERAL(CharT, "]");
     }
 }
 

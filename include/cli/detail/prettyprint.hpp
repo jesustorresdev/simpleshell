@@ -1,5 +1,5 @@
 /*
- * utility.hpp - Private components useful to other parts of the library
+ * prettyprint.hpp - Implementation details of pretty-print manipulator
  *
  *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
  *
@@ -16,24 +16,20 @@
  * limitations under the License.
  */
 
-#ifndef UTILITY_DETAIL_HPP_
-#define UTILITY_DETAIL_HPP_
+#ifndef PRETTYPRINT_DETAIL_HPP_
+#define PRETTYPRINT_DETAIL_HPP_
 
-#include <ios>
-#include <string>
-
-#include <boost/system/error_code.hpp>
-
-namespace cli { namespace utility { namespace detail
+namespace cli { namespace prettyprint { namespace detail
 {
-    bool isLineEmpty(const std::string& line);
-    bool isStreamTty(const std::ios& stream);
+    extern const int INDENT_DEFAULT_WIDTH;
 
+    //
+    // Indexes in stream internal extensible array
+    //
+
+    extern const int PRETTYPRINT_ENABLED_FLAG_INDEX;
+    extern const int INDENT_SPACE_INDEX;
+    extern const int INDENT_WIDTH_INDEX;
 }}}
 
-namespace std
-{
-    using namespace boost::system;
-}
-
-#endif /* UTILITY_DETAIL_HPP_ */
+#endif /* PRETTYPRINT_DETAIL_HPP_ */

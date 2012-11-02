@@ -17,8 +17,8 @@
 #
 
 SET (CLI_SOURCE ${CLI_SOURCE} basic_spirit.cpp command.cpp dl.cpp fileno.cpp
-                              glob.cpp readline.cpp shell.cpp utility.cpp
-                              words.cpp)
+                              glob.cpp prettyprint.cpp readline.cpp shell.cpp
+                              utility.cpp words.cpp)
 
 # Build static library
 ADD_LIBRARY(cli STATIC ${CLI_SOURCE})

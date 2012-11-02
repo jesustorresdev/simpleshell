@@ -20,7 +20,9 @@
 #include <string>
 
 #include <cli/callbacks.hpp>
+#include <cli/prettyprint.hpp>
 #include <cli/shell.hpp>
+#include <cli/utility.hpp>
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
@@ -41,6 +43,9 @@ const char PROMPT_TEXT[] = "$ ";
 bool exitCommandCallback(const std::string& command,
     cli::ShellArguments const& arguments)
 {
+    std::cout << "command:   " << command << std::endl;
+    std::cout << "arguments: " << arguments << std::endl;
+    std::cout << std::endl;
     return true;
 }
 
@@ -92,8 +97,13 @@ bool exitCommandCallback(const std::string& command,
 bool defaultCommandCallback(const std::string& command,
     cli::ShellArguments const& arguments)
 {
-    std::cout << command << ": ";
-    std::cout << arguments << std::endl;
+    using namespace cli::prettyprint;
+
+    std::cout << prettyprint;
+    std::cout << "command:   " << command << std::endl;
+    std::cout << "arguments: " << arguments << std::endl;
+    std::cout << "------------------------" << std::endl;
+    std::cout << noprettyprint << std::endl;
     return false;
 }
 
