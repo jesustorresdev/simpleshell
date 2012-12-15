@@ -32,6 +32,13 @@
 namespace cli { namespace utility
 {
     //
+    // Retrieve the basename component of name that was used to invoke the
+    // calling program
+    //
+
+    const char* getProgramInvocationShortName();
+
+    //
     // Functions for std::vector<std::string> to char*[] conversion
     //
 

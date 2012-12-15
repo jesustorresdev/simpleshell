@@ -22,7 +22,6 @@
 #ifndef BASE_HPP_
 #define BASE_HPP_
 
-#include <cerrno>
 #include <iostream>
 #include <map>
 #include <string>
@@ -318,10 +317,10 @@ namespace cli
         ParseError const& error, const std::string& line)
     {
         if (parseErrorCallback_.empty()) {
-            err_ << ::program_invocation_short_name
-                  << ": "
-                  << error.what()
-                  << std::endl;
+            err_ << cli::utility::getProgramInvocationShortName()
+                 << ": "
+                 << error.what()
+                 << std::endl;
             return false;
         }
         return parseErrorCallback_(error, line);

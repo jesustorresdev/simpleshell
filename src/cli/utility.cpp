@@ -17,6 +17,8 @@
  */
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <ios>
 #include <locale>
@@ -29,10 +31,28 @@
 #include <cli/detail/utility.hpp>
 #include <cli/utility.hpp>
 
+#include "config.h"
 #include "fileno.hpp"
 
 namespace cli { namespace utility
 {
+    //
+    // Retrieve the basename component of name that was used to invoke the
+    // calling program
+    //
+
+    const char* getProgramInvocationShortName()
+    {
+#if defined(_GNU_SOURCE)
+        return ::program_invocation_short_name;
+#elif defined(HAS_GETPROGNAME)
+        return getprogname();
+#else
+        static const char* unknown_program_name = "(unknown)";
+        return unknown_program_name;
+#endif
+    }
+
     //
     // Functions for std::vector<std::string> to char*[] conversion
     //
