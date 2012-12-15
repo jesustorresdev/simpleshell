@@ -22,7 +22,8 @@ PROJECT(simpleshell)
 #
 # Global configuration
 #
-INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/include")
+INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/include"
+                    "${PROJECT_BINARY_DIR}")
 SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules")
 SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
 SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/lib")
@@ -41,6 +42,14 @@ SET(DOCUMENTATION_SYSTEM_INPUT_LIST "src"
                                     "include"
                                     "include/cli"
 )
+
+#
+# Plataform checks
+#
+INCLUDE(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS("getprogname" HAVE_GETPROGNAME)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 #
 # Find Boost. It is a requirement for the framework

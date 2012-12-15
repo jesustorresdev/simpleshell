@@ -30,6 +30,7 @@
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
 #include <cli/shell.hpp>
+#include <cli/utility.hpp>
 
 //
 // Adaptors from CommandArguments classes to Boost.Fusion sequences. They are
@@ -238,15 +239,19 @@ namespace cli
 
         using namespace glob;
 
+#if defined(_GNU_SOURCE)
         Glob glob(pattern, Glob::EXPAND_BRACE_EXPRESSIONS |
-            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE_WITH_CHECK);
+            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE);
+#else
+        Glob glob(pattern, Glob::NO_PATH_NAMES_CHECK);
+#endif /* _GNU_SOURCE */
 
         Glob::ErrorsType errors = glob.getErrors();
         for (Glob::ErrorsType::const_iterator i = errors.begin();
             i < errors.end(); ++i)
         {
             std::cerr
-                << ::program_invocation_short_name
+                << cli::utility::getProgramInvocationShortName()
                 << ": "
                 << translate("i/o error at")
                 << " "
