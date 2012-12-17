@@ -338,6 +338,8 @@ namespace cli
     using namespace cli::parser::shellparser;
 
     typedef CommandArguments ShellArguments;
+    typedef VariableAssignment VariableAssignment;
+    typedef StdioRedirection StdioRedirection;
 
     //
     // Class ShellInterpreter

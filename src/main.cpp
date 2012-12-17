@@ -55,10 +55,10 @@ bool exitCommandCallback(const std::string& command,
 //
 // If this function returns true, the interpreter ends.
 //
-// cli::ShellArguments is an alias of cli::parser::shellparser::
-// CommandArguments. See include/cli/shell.hpp for its definition:
+// cli::ShellArguments is really an alias of cli::parser::shellparser::
+// CommandArguments. See include/cli/shell.hpp for its definition.
 //
-//    struct CommandArguments
+//    struct ShellArguments
 //    {
 //        enum TypeOfTerminator
 //        {
