@@ -31,7 +31,7 @@ namespace cli { namespace exception
     {
 
         UnknownCallbackException(const std::string& callbackName)
-            : logic_error("Unknown callback function name: " + callbackName) {}
+            : logic_error("Unknown interpreter callback: " + callbackName) {}
 
         ~UnknownCallbackException() throw() {}
     };
