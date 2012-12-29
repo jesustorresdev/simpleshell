@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -29,6 +30,19 @@ const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>\n";
 
 const char PROMPT_TEXT[] = "$ ";
+
+//
+// Function to be invoked by the interpreter to substitute variable names
+// in command-line by its value.
+//
+// It lookups then name in process environment variables and returns its
+// value if the variable exist. Or returns an empty string in other case.
+//
+
+std::string variableLookupCallback(const std::string& name)
+{
+    return std::string(getenv(name.c_str()));
+}
 
 //
 // Function to be invoked by the interpreter when the user inputs the
@@ -119,6 +133,10 @@ int main(int argc, char** argv)
     // Set the intro and prompt texts
     interpreter.setIntroText(INTRO_TEXT);
     interpreter.setPromptText(PROMPT_TEXT);
+
+    // Set the callback function that will be invoked for variable substitution
+    interpreter.setCallback<cli::callback::VariableLookupCallback>(
+       &variableLookupCallback);
 
     // Set the callback function that will be invoked when the user inputs
     // the 'exit' command
