@@ -49,8 +49,8 @@
         BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)<TYPE>::Type            \
         BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE);                       \
     boost::function<BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE)>           \
-        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);				        \
-    template <int N, int M>													\
+        BOOST_PP_TUPLE_ELEM(2, 1, DECLARATION_TUPLE);                       \
+    template <int N, int M>                                                 \
     struct SetCallbackImpl<                                                 \
         cli::callback::BOOST_PP_TUPLE_ELEM(2, 0, DECLARATION_TUPLE), N, M>  \
     {                                                                       \
@@ -77,16 +77,16 @@
     };
 
 #define CLI_DECLARE_CALLBACKS(TYPE, DECLARATIONS_SEQ)               \
-    template <template <typename> class Callback, int N, int M> 	\
-    struct SetCallbackImpl											\
-    {																\
-        template <typename T, typename Functor>						\
-        static void setCallback(T& interpreter, Functor function)	\
-        {															\
-            throw cli::exception::UnknownCallbackException(			\
-                Callback<T>::name());								\
-        }															\
-    };																\
+    template <template <typename> class Callback, int N, int M>     \
+    struct SetCallbackImpl                                          \
+    {                                                               \
+        template <typename T, typename Functor>                     \
+        static void setCallback(T& interpreter, Functor function)   \
+        {                                                           \
+            throw cli::exception::UnknownCallbackException(         \
+                Callback<T>::name());                               \
+        }                                                           \
+    };                                                              \
     BOOST_PP_SEQ_FOR_EACH(                                          \
         CLI_DECLARE_CALLBACK_MEMBER,                                \
         TYPE,                                                       \
@@ -94,16 +94,16 @@
             CLI_DECLARE_CALLBACKS_FILLER_0 DECLARATIONS_SEQ, _END))
 
 #define CLI_DECLARE_CALLBACKS_TPL(TYPE, DECLARATIONS_SEQ)           \
-    template <template <typename> class Callback, int N, int M> 	\
-    struct SetCallbackImpl											\
-    {																\
-        template <typename T, typename Functor>						\
-        static void setCallback(T& interpreter, Functor function)	\
-        {															\
-            throw cli::exception::UnknownCallbackException(			\
-                Callback<T>::name());								\
-        }															\
-    };																\
+    template <template <typename> class Callback, int N, int M>     \
+    struct SetCallbackImpl                                          \
+    {                                                               \
+        template <typename T, typename Functor>                     \
+        static void setCallback(T& interpreter, Functor function)   \
+        {                                                           \
+            throw cli::exception::UnknownCallbackException(         \
+                Callback<T>::name());                               \
+        }                                                           \
+    };                                                              \
     BOOST_PP_SEQ_FOR_EACH(                                          \
         CLI_DECLARE_CALLBACK_MEMBER_TPL,                            \
         TYPE,                                                       \
