@@ -4,7 +4,7 @@
  *
  * Simple framework for writing line-oriented command interpreters
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,35 +89,29 @@ namespace cli
             virtual ~CommandLineInterpreterBase() {};
 
             //
-            // Methods to interpret command-line input
+            // Members to interpret command-line input
             //
 
             void loop();
             bool interpretOneLine(std::string line);
 
             //
-            // I/O streams getters
+            // Members to manage the command history
             //
 
-            std::istream& getInStream() const
-                { return in_; }
-            std::ostream& getOutStream() const
-                { return out_; }
-            std::ostream& getErrStream() const
-                { return err_; }
-
-            //
-            // Other attributes getters & setters
-            //
-
-            const std::string& getLastCommand() const
+            const std::string& lastCommand() const
                 { return lastCommand_; }
 
-            void setIntroText(const std::string& intro)
+            void historyFile(const std::string& fileName);
+
+            //
+            // Members to configure the user interface
+            //
+
+            void introText(const std::string& intro)
                 { introText_ = intro; }
-            void setPromptText(const std::string& prompt)
+            void promptText(const std::string& prompt)
                 { promptText_ = prompt; }
-            void setHistoryFile(const std::string& fileName);
 
             //
             // Callback functions setter
@@ -317,7 +311,7 @@ namespace cli
         ParseError const& error, const std::string& line)
     {
         if (parseErrorCallback_.empty()) {
-            err_ << cli::utility::getProgramInvocationShortName()
+            err_ << cli::utility::programShortName()
                  << ": "
                  << error.what()
                  << std::endl;
@@ -343,11 +337,11 @@ namespace cli
     }
 
     template <typename Arguments>
-    void CommandLineInterpreterBase<Arguments>::setHistoryFile(
+    void CommandLineInterpreterBase<Arguments>::historyFile(
         const std::string& fileName)
     {
         readLine_.clearHistory();
-        readLine_.setHistoryFile(fileName);
+        readLine_.historyFile(fileName);
     }
 
     template <typename Arguments>

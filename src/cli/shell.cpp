@@ -1,7 +1,7 @@
 /*
  * shell.cpp - Interpreter designed to emulate a very simple shell
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,12 +246,12 @@ namespace cli
         Glob glob(pattern, Glob::NO_PATH_NAMES_CHECK);
 #endif /* _GNU_SOURCE */
 
-        Glob::ErrorsType errors = glob.getErrors();
+        Glob::ErrorsType errors = glob.errors();
         for (Glob::ErrorsType::const_iterator i = errors.begin();
             i < errors.end(); ++i)
         {
             std::cerr
-                << cli::utility::getProgramInvocationShortName()
+                << cli::utility::programShortName()
                 << ": "
                 << translate("i/o error at")
                 << " "

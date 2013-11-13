@@ -1,7 +1,7 @@
 /*
  * glob.hpp - Find pathnames matching a pattern
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ namespace glob
             // Error handling
             //
 
-            const ErrorsType& getErrors() const
+            const ErrorsType& errors() const
                 { return errors_; }
 
             //
