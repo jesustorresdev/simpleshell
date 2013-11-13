@@ -1,7 +1,7 @@
 /*
  * glob.cpp - Find pathnames matching a pattern
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,15 @@ namespace glob
     // which the glob() function was invoked.
     //
 
-    thread_specific_ptr<Glob> currentGlobObject;
+    thread_specific_ptr<Glob> globObject;
 
     extern "C" int onGlobError(const char *epath, int eerrno)
     {
-        return currentGlobObject->onError(epath,
-            std::error_code(eerrno, std::system_category()));
+        std::string pathName(epath);
+        std::error_code errorCode(eerrno, std::system_category());
+
+        globObject->errors_.push_back(std::make_pair(pathName, errorCode));
+        return globObject->onError(pathName, errorCode);
     }
 
     //
@@ -59,12 +62,12 @@ namespace glob
 
     Glob::Glob(const std::string& pattern, GlobFlags flags)
     {
-        currentGlobObject.reset(this);
+        globObject.reset(this);
 
         posix::glob_t glob;
         posix::glob(pattern.c_str(), flags, &onGlobError, &glob);
 
-        currentGlobObject.release();
+        globObject.release();
 
         if (glob.gl_pathc) {
             for (char** p = glob.gl_pathv; *p != NULL; ++p) {
@@ -78,7 +81,6 @@ namespace glob
     bool Glob::onError(const std::string& pathName,
         std::error_code errorCode)
     {
-        errors_.push_back(std::make_pair(pathName, errorCode));
         return false;
     }
 
