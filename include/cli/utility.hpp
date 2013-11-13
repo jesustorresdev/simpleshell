@@ -1,7 +1,7 @@
 /*
  * utility.hpp - Components useful to other parts of the library
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ namespace cli { namespace utility
     // calling program
     //
 
-    const char* getProgramInvocationShortName();
+    const char* programShortName();
 
     //
     // Functions for std::vector<std::string> to char*[] conversion

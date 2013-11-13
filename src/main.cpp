@@ -1,7 +1,7 @@
 /*
  * main.cpp - Demo in C++ of a simple shell
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,8 +117,8 @@ int main(int argc, char** argv)
     cli::ShellInterpreter interpreter;
 
     // Set the intro and prompt texts
-    interpreter.setIntroText(INTRO_TEXT);
-    interpreter.setPromptText(PROMPT_TEXT);
+    interpreter.introText(INTRO_TEXT);
+    interpreter.promptText(PROMPT_TEXT);
 
     // Set the callback function that will be invoked when the user inputs
     // the 'exit' command

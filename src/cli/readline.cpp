@@ -1,7 +1,7 @@
 /*
  * readline.cpp - Simple C++ wrapper around libreadline
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,8 @@ namespace cli { namespace readline
         // readline library loaded. Other symbols provided by the library
         // will be resolved on demand.
         if (isLoad()) {
-            getFunction(readline_, "readline");
-            if (getLastError() != std::errc::success) {
+            resolveFunction(readline_, "readline");
+            if (lastError() != std::errc::success) {
                 return;
             }
         }
@@ -85,24 +85,24 @@ namespace cli { namespace readline
     }
 
 //
-// Macros READLINELIBRARY_GET_FUNCTION & READLINELIBRARY_GET_VARIABLE
+// Macros READLINELIBRARY_FUNCTION & READLINELIBRARY_VARIABLE
 //
 // Used internally by class ReadlineLibrary to resolve on demand the symbols
 // provided by the library.
 //
 
-#define READLINELIBRARY_GET_FUNCTION(FUNCTION, SYMBOL)      \
+#define READLINELIBRARY_FUNCTION(FUNCTION, SYMBOL)          \
     if (FUNCTION.empty()) {                                 \
-        getFunction(FUNCTION, SYMBOL);                      \
-        if (getLastError() != std::errc::success) {         \
+        resolveFunction(FUNCTION, SYMBOL);                  \
+        if (lastError() != std::errc::success) {            \
             return;                                         \
         }                                                   \
     }
 
-#define READLINELIBRARY_GET_VARIABLE(VARIABLE_PTR, SYMBOL)  \
+#define READLINELIBRARY_VARIABLE(VARIABLE_PTR, SYMBOL)      \
     if (*VARIABLE_PTR == NULL) {                            \
-        getAddress(VARIABLE_PTR, SYMBOL);                   \
-        if (getLastError() != std::errc::success) {         \
+        resolve(VARIABLE_PTR, SYMBOL);                      \
+        if (lastError() != std::errc::success) {            \
             return;                                         \
         }                                                   \
     }
@@ -113,13 +113,13 @@ namespace cli { namespace readline
 
     void ReadlineLibrary::addHistory(const std::string& line)
     {
-        READLINELIBRARY_GET_FUNCTION(add_history_, "add_history");
+        READLINELIBRARY_FUNCTION(add_history_, "add_history");
         add_history_(line.c_str());
     }
 
     void ReadlineLibrary::readHistory(const std::string& fileName)
     {
-        READLINELIBRARY_GET_FUNCTION(read_history_, "read_history");
+        READLINELIBRARY_FUNCTION(read_history_, "read_history");
         const char* c_fileName = fileName.empty() ? NULL : fileName.c_str();
         int errorNo = read_history_(c_fileName);
         errorCode_ = std::error_code(errorNo, std::system_category());
@@ -127,7 +127,7 @@ namespace cli { namespace readline
 
     void ReadlineLibrary::writeHistory(const std::string& fileName)
     {
-        READLINELIBRARY_GET_FUNCTION(write_history_, "write_history");
+        READLINELIBRARY_FUNCTION(write_history_, "write_history");
         const char* c_fileName = fileName.empty() ? NULL : fileName.c_str();
         int errorNo = write_history_(c_fileName);
         errorCode_ = std::error_code(errorNo, std::system_category());
@@ -135,7 +135,7 @@ namespace cli { namespace readline
 
     void ReadlineLibrary::clearHistory()
     {
-        READLINELIBRARY_GET_FUNCTION(clear_history_, "clear_history");
+        READLINELIBRARY_FUNCTION(clear_history_, "clear_history");
         clear_history_();
     }
 
@@ -143,9 +143,9 @@ namespace cli { namespace readline
     // I/0 streams setters
     //
 
-    void ReadlineLibrary::setInStream(std::istream& in)
+    void ReadlineLibrary::inStream(std::istream& in)
     {
-        READLINELIBRARY_GET_VARIABLE(rl_instream_, "rl_instream");
+        READLINELIBRARY_VARIABLE(rl_instream_, "rl_instream");
         int fd_in = ::fileno(in);
         if (fd_in == -1) {
             errorCode_ = std::error_code(errno, std::system_category());
@@ -162,9 +162,9 @@ namespace cli { namespace readline
         errorCode_.clear();
     }
 
-    void ReadlineLibrary::setOutStream(std::ostream& out)
+    void ReadlineLibrary::outStream(std::ostream& out)
     {
-        READLINELIBRARY_GET_VARIABLE(rl_outstream_, "rl_outstream");
+        READLINELIBRARY_VARIABLE(rl_outstream_, "rl_outstream");
         int fd_out = ::fileno(out);
         if (fd_out == -1) {
             errorCode_ = std::error_code(errno, std::system_category());
@@ -190,7 +190,7 @@ namespace cli { namespace readline
           in_(&std::cin), out_(&std::cout)
     {
         if (readlineLibrary_ &&
-            (readlineLibrary_->getLastError() != std::errc::success)) {
+            (readlineLibrary_->lastError() != std::errc::success)) {
             readlineLibrary_.reset();
         }
     }
@@ -219,15 +219,15 @@ namespace cli { namespace readline
     }
 
     //
-    // I/O streams setters
+    // Standard I/O streams setters
     //
 
-    void Readline::setInStream(std::istream& in)
+    void Readline::inStream(std::istream& in)
     {
         in_ = &in;
         if (readlineLibrary_) {
-            readlineLibrary_->setInStream(in);
-            std::error_code errorCode = readlineLibrary_->getLastError();
+            readlineLibrary_->inStream(in);
+            std::error_code errorCode = readlineLibrary_->lastError();
             if (errorCode != std::errc::success) {
                 throw std::system_error(errorCode,
                     "unexpected error changing readline input stream");
@@ -235,12 +235,12 @@ namespace cli { namespace readline
         }
     }
 
-    void Readline::setOutStream(std::ostream& out)
+    void Readline::outStream(std::ostream& out)
     {
         out_ = &out;
         if (readlineLibrary_) {
-            readlineLibrary_->setOutStream(out);
-            std::error_code errorCode = readlineLibrary_->getLastError();
+            readlineLibrary_->outStream(out);
+            std::error_code errorCode = readlineLibrary_->lastError();
             if (errorCode != std::errc::success) {
                 throw std::system_error(errorCode,
                     "unexpected error changing readline output stream");
@@ -249,10 +249,10 @@ namespace cli { namespace readline
     }
 
     //
-    // Methods for history management
+    // Members for history management
     //
 
-    void Readline::setHistoryFile(const std::string &fileName,
+    void Readline::historyFile(const std::string &fileName,
         bool loadInHistory)
     {
         if (readlineLibrary_) {
