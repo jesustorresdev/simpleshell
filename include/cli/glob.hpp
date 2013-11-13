@@ -65,6 +65,7 @@ namespace glob
             };
 
             Glob(const std::string& pattern, GlobFlags flags = NONE);
+            virtual ~Glob() {};
 
             //
             // Overloaded cast operators to get the list of path names found
@@ -86,13 +87,13 @@ namespace glob
 
             static std::string escape(const std::string& pattern);
 
-        protected:
+        private:
              ErrorsType errors_;
 
              virtual bool onError(const std::string& pathName,
                  std::error_code errorCode);
 
-        private:
+
              std::vector<std::string> pathNames_;
 
              friend int onGlobError(const char* epath, int eerrno);
