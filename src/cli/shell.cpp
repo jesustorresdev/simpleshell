@@ -225,16 +225,16 @@ namespace cli
     {}
 
     std::string ShellInterpreter::variableLookup(const std::string& name)
-        {
-        return variableLookupCallback_.empty() ?
-            std::string() : variableLookupCallback_(name);
-        }
+    {
+        return onVariableLookup ?
+            onVariableLookup.callable()(name) : std::string();
+    }
 
     std::vector<std::string> ShellInterpreter::pathnameExpansion(
         const std::string& pattern)
     {
-        if (! pathnameExpansionCallback_.empty()) {
-            return pathnameExpansionCallback_(pattern);
+        if (onPathnameExpansion) {
+            return onPathnameExpansion.callable()(pattern);
         }
 
         using namespace glob;

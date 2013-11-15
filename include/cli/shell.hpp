@@ -335,6 +335,7 @@ namespace cli { namespace parser { namespace shellparser
 
 namespace cli
 {
+    using namespace cli::callback;
     using namespace cli::parser::shellparser;
 
     typedef CommandArguments ShellArguments;
@@ -371,11 +372,12 @@ namespace cli
 
         private:
 
-            CLI_DECLARE_CALLBACKS(
-                ShellInterpreter,
-                (VariableLookupCallback, variableLookupCallback_)
-                (PathnameExpansionCallback, pathnameExpansionCallback_)
-            )
+            //
+            // Accessors of callback functions
+            //
+
+            VariableLookupCallback<Type> onVariableLookup;
+            PathnameExpansionCallback<Type> onPathnameExpansion;
     };
 }
 
