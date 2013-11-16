@@ -26,7 +26,7 @@
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
-                          "Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>\n";
+                          "Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>\n";
 
 const char PROMPT_TEXT[] = "$ ";
 
@@ -40,8 +40,7 @@ const char PROMPT_TEXT[] = "$ ";
 // CommandArguments. See include/cli/shell.hpp for its definition.
 //
 
-bool exitCommandCallback(const std::string& command,
-    cli::ShellArguments const& arguments)
+bool onExit(const std::string& command, cli::ShellArguments const& arguments)
 {
     std::cout << "command:   " << command << std::endl;
     std::cout << "arguments: " << arguments << std::endl;
@@ -94,7 +93,7 @@ bool exitCommandCallback(const std::string& command,
 //    };
 //
 
-bool defaultCommandCallback(const std::string& command,
+bool onAnotherCommands(const std::string& command,
     cli::ShellArguments const& arguments)
 {
     using namespace cli::prettyprint;
@@ -122,13 +121,11 @@ int main(int argc, char** argv)
 
     // Set the callback function that will be invoked when the user inputs
     // the 'exit' command
-    interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &exitCommandCallback, "exit");
+    interpreter.onRunCommand("exit", &onExit);
 
     // Set the callback function that will be invoked when the user inputs
     // any other command
-    interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &defaultCommandCallback);
+    interpreter.onRunCommand(&onAnotherCommands);
 
     // Run the interpreter
     interpreter.loop();

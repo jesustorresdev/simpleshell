@@ -1,7 +1,7 @@
 /*
  * shell.hpp - Interpreter designed to emulate a very simple shell
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,6 +335,7 @@ namespace cli { namespace parser { namespace shellparser
 
 namespace cli
 {
+    using namespace cli::callback;
     using namespace cli::parser::shellparser;
 
     typedef CommandArguments ShellArguments;
@@ -371,11 +372,12 @@ namespace cli
 
         private:
 
-            CLI_DECLARE_CALLBACKS(
-                ShellInterpreter,
-                (VariableLookupCallback, variableLookupCallback_)
-                (PathnameExpansionCallback, pathnameExpansionCallback_)
-            )
+            //
+            // Accessors of callback functions
+            //
+
+            VariableLookupCallback onVariableLookup;
+            PathnameExpansionCallback onPathnameExpansion;
     };
 }
 

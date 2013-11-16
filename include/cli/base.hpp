@@ -23,10 +23,7 @@
 #define BASE_HPP_
 
 #include <iostream>
-#include <map>
 #include <string>
-
-#include <boost/function.hpp>
 
 #include <cli/callbacks.hpp>
 #include <cli/readline.hpp>
@@ -34,6 +31,8 @@
 
 namespace cli
 {
+    using namespace cli::callback;
+
     //
     // Class ParseError
     //
@@ -74,9 +73,9 @@ namespace cli
     class CommandLineInterpreterBase
     {
         public:
-	        typedef CommandLineInterpreterBase<Arguments> Type;
-	        typedef Arguments ArgumentsType;
-	        typedef ParseError ParseErrorType;
+            typedef CommandLineInterpreterBase<Arguments> Type;
+            typedef Arguments ArgumentsType;
+            typedef ParseError ParseErrorType;
 
             //
             // Class constructors
@@ -114,14 +113,16 @@ namespace cli
                 { promptText_ = prompt; }
 
             //
-            // Callback functions setter
+            // Accessors of callback functions
             //
 
-            template <template <typename> class Callback, typename Functor>
-            void setCallback(Functor function);
-            template <template <typename> class Callback, typename Functor,
-                typename Argument>
-            void setCallback(Functor function, Argument argument);
+            RunCommandCallback<Type> onRunCommand;
+            EmptyLineCallback onEmptyLine;
+            PreRunCommandCallback onPreRunCommand;
+            PostRunCommandCallback onPostRunCommand;
+            PreLoopCallback onPreLoop;
+            PostLoopCallback onPostLoop;
+            ParseErrorCallback<Type> onParseError;
 
         protected:
 
@@ -129,7 +130,7 @@ namespace cli
             // Hook methods invoked for command execution
             //
 
-            virtual bool doCommand(const std::string& command,
+            virtual bool runCommand(const std::string& command,
             	Arguments const& arguments);
             virtual bool emptyLine();
 
@@ -137,8 +138,8 @@ namespace cli
             // Hook methods invoked inside interpretOneLine()
             //
 
-            virtual void preDoCommand(std::string& line) {};
-            virtual bool postDoCommand(bool isFinished,
+            virtual void preRunCommand(std::string& line) {};
+            virtual bool postRunCommand(bool isFinished,
                 const std::string& line);
             virtual bool parseError(ParseError const& error,
                 const std::string& line);
@@ -159,34 +160,6 @@ namespace cli
             std::string introText_;
             std::string promptText_;
             std::string lastCommand_;
-
-            //
-            // Callback function objects
-            //
-
-            CLI_DECLARE_CALLBACKS_TPL(
-                Type,
-                (DoCommandCallback, defaultDoCommandCallback_)
-                (EmptyLineCallback, emptyLineCallback_)
-                (PreDoCommandCallback, preDoCommandCallback_)
-                (PostDoCommandCallback, postDoCommandCallback_)
-                (ParseErrorCallback, parseErrorCallback_)
-                (PreLoopCallback, preLoopCallback_)
-                (PostLoopCallback, postLoopCallback_)
-            )
-
-  	    	typedef std::map<std::string,
-                boost::function<DoCommandCallback> > DoCommandCallbacks;
-            DoCommandCallbacks doCommandCallbacks_;
-
-            template <int M>
-            struct SetCallbackImpl<cli::callback::DoCommandCallback, 1, M>
-            {
-                template <typename T, typename Functor>
-                static void setCallback(T& interpreter, Functor function,
-                    const std::string& command)
-                    { interpreter.doCommandCallbacks_[command] = function; }
-            };
 
             //
             // Parser handling
@@ -246,7 +219,7 @@ namespace cli
     bool CommandLineInterpreterBase<Arguments>::interpretOneLine(
         std::string line)
     {
-        preDoCommand(line);
+        preRunCommand(line);
 
         if (utility::detail::isLineEmpty(line)) {
             return emptyLine();
@@ -268,8 +241,8 @@ namespace cli
                 return isFinished;
             }
             else {
-                isFinished = doCommand(command, arguments);
-                isFinished = postDoCommand(isFinished, line);
+                isFinished = runCommand(command, arguments);
+                isFinished = postRunCommand(isFinished, line);
                 if (isFinished)
                     return true;
             }
@@ -278,62 +251,54 @@ namespace cli
     }
 
     template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::doCommand(
+    bool CommandLineInterpreterBase<Arguments>::runCommand(
         const std::string& command, Arguments const& arguments)
     {
-        typename DoCommandCallbacks::const_iterator i;
-        i = doCommandCallbacks_.find(command);
-        if (i == doCommandCallbacks_.end()) {
-            return defaultDoCommandCallback_.empty() ?
-                false : defaultDoCommandCallback_(command, arguments);
-        }
-        else {
-            return i->second(command, arguments);
-        }
+        return onRunCommand ? onRunCommand.call(command, arguments) : false;
     }
 
     template <typename Arguments>
     bool CommandLineInterpreterBase<Arguments>::emptyLine()
     {
-        return emptyLineCallback_.empty() ? false : emptyLineCallback_();
+        return onEmptyLine ? onEmptyLine.call() : false;
     }
 
     template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::postDoCommand(bool isFinished,
+    bool CommandLineInterpreterBase<Arguments>::postRunCommand(bool isFinished,
         const std::string& line)
     {
-        return postDoCommandCallback_.empty() ?
-            isFinished : postDoCommandCallback_(isFinished, line);
-    }
-
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::parseError(
-        ParseError const& error, const std::string& line)
-    {
-        if (parseErrorCallback_.empty()) {
-            err_ << cli::utility::programShortName()
-                 << ": "
-                 << error.what()
-                 << std::endl;
-            return false;
-        }
-        return parseErrorCallback_(error, line);
+        return onPostRunCommand ?
+            onPostRunCommand.call(isFinished, line) : isFinished;
     }
 
     template <typename Arguments>
     void CommandLineInterpreterBase<Arguments>::preLoop()
     {
-        if (! preLoopCallback_.empty()) {
-            preLoopCallback_();
+        if (onPreLoop) {
+            onPreLoop.call();
         }
     }
 
     template <typename Arguments>
     void CommandLineInterpreterBase<Arguments>::postLoop()
     {
-        if (! postLoopCallback_.empty()) {
-            postLoopCallback_();
+        if (onPostLoop) {
+            onPostLoop.call();
         }
+    }
+
+    template <typename Arguments>
+    bool CommandLineInterpreterBase<Arguments>::parseError(
+        ParseError const& error, const std::string& line)
+    {
+        if (! onParseError) {
+            err_ << cli::utility::programShortName()
+                 << ": "
+                 << error.what()
+                 << std::endl;
+            return false;
+        }
+        return onParseError.call(error, line);
     }
 
     template <typename Arguments>
@@ -342,25 +307,6 @@ namespace cli
     {
         readLine_.clearHistory();
         readLine_.historyFile(fileName);
-    }
-
-    template <typename Arguments>
-    template <template <typename> class Callback, typename Functor>
-    void CommandLineInterpreterBase<Arguments>::setCallback(Functor function)
-    {
-        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
-        SetCallbackImpl<Callback, 0, 0>::setCallback(*this, function);
-    }
-
-    template <typename Arguments>
-    template <template <typename> class Callback, typename Functor,
-        typename Argument>
-    void CommandLineInterpreterBase<Arguments>::setCallback(Functor function,
-        Argument argument)
-    {
-        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
-        SetCallbackImpl<Callback, 1, 0>::setCallback(*this,
-            function, argument);
     }
 }
 
