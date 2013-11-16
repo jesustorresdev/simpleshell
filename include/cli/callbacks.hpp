@@ -27,164 +27,86 @@
 
 namespace cli { namespace callback
 {
-    //
-    // Class CallbackSignature
-    //
-    // Trait class used to retrieve the function signature of a callback.
-    //
-
-    template <typename Callback>
-    struct CallbackSignature
-    {};
-
-    //
-    // Class CallbackBase
-    //
-
-    template <typename Callback>
-    class CallbackBase
+    template <typename Return, typename... Arguments>
+    class Callback
     {
         public:
-            typedef CallbackBase<Callback> Type;
-            typedef typename CallbackSignature<Callback>::ValueType Signature;
+            typedef Callback<Return, Arguments...> Type;
+            typedef Return (Signature)(Arguments...);
 
-            const boost::function<Signature>& callable() const
-               { return callable_; }
+            Return call(Arguments... arguments) const
+               { return callback_(arguments...); }
 
-            void operator()(boost::function<Signature> const& callback)
-               { callable_ = callback; }
+            void operator()(const boost::function<Signature>& callback)
+               { callback_ = callback; }
 
             operator bool() const
-               { return ! callable_.empty(); };
+               { return ! callback_.empty(); };
 
         private:
-            boost::function<Signature> callable_;
+            boost::function<Signature> callback_;
     };
 
     //
     // Callback types for cli::CommandLineInterpreterBase class
     //
 
-    template <>
-    struct CallbackSignature<RunCommandCallback>
-    {
-        typedef bool (Type)(const std::string&,
-            typename Interpreter::ArgumentsType const&);
-    }
-
     template <typename Interpreter>
     class RunCommandCallback
-        : public CallbackBase<RunCommandCallback<Interpreter> >
+        : public Callback<bool, const std::string&,
+            typename Interpreter::ArgumentsType const&>
     {
         public:
+            typedef typename Interpreter::ArgumentsType ArgumentsType;
+            typedef Callback<bool, const std::string&,
+                ArgumentsType const&> BaseType;
+            typedef typename BaseType::Signature Signature;
 
-
-            typedef CallbackBase<RunCommandCallback< Interpreter> > BaseType;
-
-            using BaseType::operator();
-
-            const boost::function<typename BaseType::Signature>& callable(
-                const std::string& command) const
+            bool call(const std::string& command,
+                ArgumentsType const& arguments) const
             {
-                typename CallbacksList::const_iterator i;
+                typename std::map<std::string,
+                    boost::function<Signature> >::const_iterator i;
                 i = callbacks_.find(command);
                 if (i == callbacks_.end()) {
-                    return BaseType::operator bool() ?
-                        BaseType::callable() : false;
+                    return BaseType::call(command, arguments);
                 }
-                    else {
-                        return i->second;
+                else {
+                    return i->second(command, arguments);
                 }
             }
 
+            using BaseType::operator();
+
             void operator()(const std::string& command,
-                boost::function<typename BaseType::Signature> const& callback)
+                boost::function<Signature> const& callback)
             {
                 callbacks_[command] = callback;
             }
 
-            operator bool() const
-            {
-                return BaseType::operator bool() || (! callbacks_.empty());
-            }
-
         private:
-            typedef std::map<std::string,
-                boost::function<typename BaseType::Signature> >
-            CallbacksList;
-
-            CallbacksList callbacks_;
+            std::map<std::string, boost::function<Signature> > callbacks_;
     };
 
-
-    template <typename Callback>
-    struct CallbackSignature
-    {};
-
-    template <>
-    struct CallbackSignature<RunCommandCallback>
-
-
-    template <typename Interpreter>
-    struct EmptyLineCallback
-        : public CallbackBase<EmptyLineCallback<Interpreter> >
-    {
-        typedef bool (Type)();
-    };
-
-    template <typename Interpreter>
-    struct PreRunCommandCallback
-        : public CallbackBase<PreRunCommandCallback<Interpreter> >
-    {
-        typedef void (Type)(std::string&);
-    };
-
-    template <typename Interpreter>
-    struct PostRunCommandCallback
-        : public CallbackBase<PostRunCommandCallback<Interpreter> >
-    {
-        typedef bool (Type)(bool, const std::string&);
-    };
-
-    template <typename Interpreter>
-    struct PreLoopCallback
-        : public CallbackBase<PreLoopCallback<Interpreter> >
-    {
-        typedef void (Type)();
-    };
-
-    template <typename Interpreter>
-    struct PostLoopCallback
-        : public CallbackBase<PostLoopCallback<Interpreter> >
-    {
-        typedef void (Type)();
-    };
+    typedef Callback<bool> EmptyLineCallback;
+    typedef Callback<void, std::string&> PreRunCommandCallback;
+    typedef Callback<bool, bool, const std::string&> PostRunCommandCallback;
+    typedef Callback<void> PreLoopCallback;
+    typedef Callback<void> PostLoopCallback;
 
     template <typename Interpreter>
     struct ParseErrorCallback
-        : public CallbackBase<ParseErrorCallback<Interpreter> >
-    {
-        typedef bool (Type)(typename Interpreter::ParseErrorType const&,
-            const std::string&);
-    };
+        : public Callback<bool, typename Interpreter::ParseErrorType const&,
+            const std::string&>
+    {};
 
     //
     // Callback types for cli::ShellInterpreter class
     //
 
-    template <typename Interpreter>
-    struct VariableLookupCallback
-        : public CallbackBase<VariableLookupCallback<Interpreter> >
-    {
-        typedef std::string (Type)(const std::string&);
-    };
-
-    template <typename Interpreter>
-    struct PathnameExpansionCallback
-        : public CallbackBase<PathnameExpansionCallback<Interpreter> >
-    {
-        typedef std::vector<std::string> (Type)(const std::string&);
-    };
+    typedef Callback<std::string, const std::string&> VariableLookupCallback;
+    typedef Callback<std::vector<std::string>, const std::string&>
+        PathnameExpansionCallback;
 }}
 
 #endif /* CALLBACKS_HPP_ */

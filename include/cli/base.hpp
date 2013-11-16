@@ -117,11 +117,11 @@ namespace cli
             //
 
             RunCommandCallback<Type> onRunCommand;
-            EmptyLineCallback<Type> onEmptyLine;
-            PreRunCommandCallback<Type> onPreRunCommand;
-            PostRunCommandCallback<Type> onPostRunCommand;
-            PreLoopCallback<Type> onPreLoop;
-            PostLoopCallback<Type> onPostLoop;
+            EmptyLineCallback onEmptyLine;
+            PreRunCommandCallback onPreRunCommand;
+            PostRunCommandCallback onPostRunCommand;
+            PreLoopCallback onPreLoop;
+            PostLoopCallback onPostLoop;
             ParseErrorCallback<Type> onParseError;
 
         protected:
@@ -254,14 +254,13 @@ namespace cli
     bool CommandLineInterpreterBase<Arguments>::runCommand(
         const std::string& command, Arguments const& arguments)
     {
-        return onRunCommand ?
-            onRunCommand.callable(command)(command, arguments) : false;
+        return onRunCommand ? onRunCommand.call(command, arguments) : false;
     }
 
     template <typename Arguments>
     bool CommandLineInterpreterBase<Arguments>::emptyLine()
     {
-        return onEmptyLine ? onEmptyLine.callable()() : false;
+        return onEmptyLine ? onEmptyLine.call() : false;
     }
 
     template <typename Arguments>
@@ -269,14 +268,14 @@ namespace cli
         const std::string& line)
     {
         return onPostRunCommand ?
-            onPostRunCommand.callable()(isFinished, line) : isFinished;
+            onPostRunCommand.call(isFinished, line) : isFinished;
     }
 
     template <typename Arguments>
     void CommandLineInterpreterBase<Arguments>::preLoop()
     {
         if (onPreLoop) {
-            onPreLoop.callable()();
+            onPreLoop.call();
         }
     }
 
@@ -284,7 +283,7 @@ namespace cli
     void CommandLineInterpreterBase<Arguments>::postLoop()
     {
         if (onPostLoop) {
-            onPostLoop.callable()();
+            onPostLoop.call();
         }
     }
 
@@ -299,7 +298,7 @@ namespace cli
                  << std::endl;
             return false;
         }
-        return onParseError.callable()(error, line);
+        return onParseError.call(error, line);
     }
 
     template <typename Arguments>
