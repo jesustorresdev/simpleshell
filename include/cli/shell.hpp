@@ -89,7 +89,7 @@ namespace cli { namespace parser { namespace shellparser
     };
 
     //
-    // Overload insertion operator (<<) for class CommandArguments.
+    // Overload insertion operator (<<) for class Arguments.
     // It is required to debug the parser rules.
     //
 
