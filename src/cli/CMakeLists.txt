@@ -16,20 +16,13 @@
 # limitations under the License.
 #
 
-SET (CLI_SOURCE ${CLI_SOURCE} basic_spirit.cpp command.cpp dl.cpp fileno.cpp
-                              glob.cpp prettyprint.cpp readline.cpp shell.cpp
+SET (CLI_SOURCE ${CLI_SOURCE} basic_spirit.cpp dl.cpp fileno.cpp glob.cpp
+                              prettyprint.cpp readline.cpp shell.cpp simple.cpp
                               utility.cpp words.cpp)
 
 # Build static library
 ADD_LIBRARY(cli STATIC ${CLI_SOURCE})
-SET_TARGET_PROPERTIES(cli PROPERTIES COMPILE_FLAGS -fPIC)
 
 # Build shared library
 #ADD_LIBRARY(cli-shared SHARED ${CLI_SOURCE})
 #TARGET_LINK_LIBRARIES(cli-shared ${CLI_LINK_LIBS})
-ADD_LIBRARY(cli-shared SHARED)
-TARGET_LINK_LIBRARIES(cli-shared
-                      -Wl,--whole-archive cli
-                      -Wl,--no-whole-archive ${CLI_LINK_LIBS})
-SET_TARGET_PROPERTIES(cli-shared PROPERTIES OUTPUT_NAME cli
-                                            LINKER_LANGUAGE CXX)

@@ -1,7 +1,7 @@
 /*
  * readline.hpp - Simple C++ wrapper around libreadline
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,8 @@ namespace cli { namespace readline
             // Readline library I/O streams setters
             //
 
-            void setInStream(std::istream& in);
-            void setOutStream(std::ostream& out);
+            void inStream(std::istream& in);
+            void outStream(std::ostream& out);
 
         private:
             boost::function<char* (const char*)> readline_;
@@ -97,14 +97,14 @@ namespace cli { namespace readline
             // I/O streams setters
             //
 
-            void setInStream(std::istream& in);
-            void setOutStream(std::ostream& out);
+            void inStream(std::istream& in);
+            void outStream(std::ostream& out);
 
             //
-            // Methods for history management
+            // History management
             //
 
-            void setHistoryFile(const std::string &fileName,
+            void historyFile(const std::string &fileName,
                 bool loadInHistory = true);
             void clearHistory();
 

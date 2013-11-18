@@ -1,7 +1,7 @@
 /*
  * dl.hpp - Programming interface to the dynamic linking loader
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,88 +114,90 @@ namespace dl
             bool isLoad() const
                 { return libraryHandle_ != NULL; }
 
-            std::error_code getLastError() const
+            std::error_code lastError() const
                 { return errorCode_; }
 
-            const std::string getLastErrorMessage() const
+            const std::string lastErrorMessage() const
                 { return lastErrorMessage_; }
 
             //
-            // Methods for symbol resolution
+            // Members for symbol resolution
             //
+
+            template <typename Type>
+            Type*& resolve(Type*& pointer, const std::string& symbol);
+
+            template <typename Type>
+            Type* resolve(const std::string& symbol);
 
             template <typename Signature>
             boost::function<Signature>&
-            getFunction(boost::function<Signature>& function,
+            resolveFunction(boost::function<Signature>& function,
                 const std::string& symbol);
 
             template <typename Signature>
             boost::function<Signature>
-            getFunction(const std::string& symbol);
-
-            template <typename Type>
-            Type*& getAddress(Type*& pointer, const std::string& symbol);
-
-            template <typename Type>
-            Type* getAddress(const std::string& symbol);
+            resolveFunction(const std::string& symbol);
 
 #if defined(_GNU_SOURCE)
+            template <typename Type>
+            Type*& resolveDefault(const std::string& symbol, Type*& pointer)
+            {
+                return resolve<Type>(pointer, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Type>
+            Type* resolveDefault(const std::string& symbol)
+            {
+                Type* pointer;
+                return resolve<Type>(pointer, RTLD_DEFAULT, symbol);
+            }
+
+            template <typename Type>
+            Type*& resolveNext(const std::string& symbol, Type*& pointer)
+            {
+                return resolve<Type>(pointer, RTLD_NEXT, symbol);
+            }
+
+            template <typename Type>
+            Type* resolveNext(const std::string& symbol)
+            {
+                Type* pointer;
+                return resolve<Type>(pointer, RTLD_NEXT, symbol);
+            }
+
             template <typename Signature>
             boost::function<Signature>&
-            getDefaultFunction(boost::function<Signature>& function,
+            resolveDefaultFunction(boost::function<Signature>& function,
                 const std::string& symbol)
             {
-                return getFunction<Signature>(function, RTLD_DEFAULT, symbol);
+                return resolveFunction<Signature>(function, RTLD_DEFAULT,
+                    symbol);
             }
 
             template <typename Signature>
             boost::function<Signature>
-            getDefaultFunction(const std::string& symbol)
+            resolveDefaultFunction(const std::string& symbol)
             {
                 boost::function<Signature> function;
-                return getFunction<Signature>(function, RTLD_DEFAULT, symbol);
+                return resolveFunction<Signature>(function, RTLD_DEFAULT,
+                    symbol);
             }
 
             template <typename Signature>
             boost::function<Signature>&
-            getNextFunction(boost::function<Signature>& function,
+            resolveNextFunction(boost::function<Signature>& function,
                 const std::string& symbol)
             {
-                return getFunction<Signature>(function, RTLD_NEXT, symbol);
+                return resolveFunction<Signature>(function, RTLD_NEXT, symbol);
             }
 
             template <typename Signature>
             boost::function<Signature>
-            getNextFunction(const std::string& symbol)
+            resolveNextFunction(const std::string& symbol)
             {
                 boost::function<Signature> function;
-                return getFunction<Signature>(function, RTLD_NEXT, symbol);
-            }
-
-            template <typename Type>
-            Type*& getDefaultAddress(Type*& pointer, const std::string& symbol)
-            {
-                return getAddress<Type>(pointer, RTLD_DEFAULT, symbol);
-            }
-
-            template <typename Type>
-            Type* getDefaultAddress(const std::string& symbol)
-            {
-                Type* pointer;
-                return getAddress<Type>(pointer, RTLD_DEFAULT, symbol);
-            }
-
-            template <typename Type>
-            Type*& getNextAddress(Type*& pointer, const std::string& symbol)
-            {
-                return getAddress<Type>(pointer, RTLD_NEXT, symbol);
-            }
-
-            template <typename Type>
-            Type* getNextVariable(const std::string& symbol)
-            {
-                Type* pointer;
-                return getAddress<Type>(pointer, RTLD_NEXT, symbol);
+                return resolveFunction<Signature>(function, RTLD_NEXT, symbol);
             }
 #endif /* _GNU_SOURCE */
 
@@ -226,16 +228,16 @@ namespace dl
             std::string lastErrorMessage_;
 
             //
-            // Private methods for symbol resolution
+            // Private members for symbol resolution
             //
+
+            template <typename Type>
+            Type*& resolve(Type*& pointer, void* handle,
+                const std::string& symbol);
 
             template <typename Signature>
             boost::function<Signature>&
-            getFunction(boost::function<Signature>& function, void* handle,
-                const std::string& symbol);
-
-            template <typename Type>
-            Type*& getAddress(Type*& pointer, void* handle,
+            resolveFunction(boost::function<Signature>& function, void* handle,
                 const std::string& symbol);
     };
 
@@ -252,49 +254,12 @@ namespace dl
         return (message == NULL) ? std::string() : std::string(message);
     }
 
-    template <typename Signature>
-    boost::function<Signature>& DynamicLibrary::getFunction(
-        boost::function<Signature>& function, const std::string& symbol)
-    {
-        if (isLoad()) {
-            getFunction<Signature>(function, libraryHandle_, symbol);
-        }
-        else {
-            lastErrorMessage_.clear();
-            errorCode_ = LoaderError::LIBRARY_NOT_LOADED;
-        }
-
-        return function;
-    }
-
-    template <typename Signature>
-    boost::function<Signature> DynamicLibrary::getFunction(
-        const std::string& symbol)
-    {
-        boost::function<Signature> function;
-        return getFunction<Signature>(function, symbol);
-    }
-
-    template <typename Signature>
-    boost::function<Signature>&
-    DynamicLibrary::getFunction(boost::function<Signature>& function,
-        void* handle, const std::string& symbol)
-    {
-        typename boost::add_pointer<Signature>::type address;
-        getAddress<Signature>(address, handle, symbol);
-        if (errorCode_ == std::errc::success) {
-            function = address;
-        }
-
-        return function;
-    }
-
     template <typename Type>
-    Type*& DynamicLibrary::getAddress(Type*& pointer,
+    Type*& DynamicLibrary::resolve(Type*& pointer,
         const std::string& symbol)
     {
         if (isLoad()) {
-            getAddress<Type>(pointer, libraryHandle_, symbol);
+            resolve<Type>(pointer, libraryHandle_, symbol);
         }
         else {
             lastErrorMessage_.clear();
@@ -304,15 +269,43 @@ namespace dl
         return pointer;
     }
 
-    template <typename Type>
-    Type* DynamicLibrary::getAddress(const std::string& symbol)
-    {
-        Type* pointer;
-        return getAddress<Type>(pointer, symbol);
-    }
 
     template <typename Type>
-    Type*& DynamicLibrary::getAddress(Type*& pointer, void* handle,
+    Type* DynamicLibrary::resolve(const std::string& symbol)
+    {
+        Type* pointer;
+        return resolve<Type>(pointer, symbol);
+    }
+
+    template <typename Signature>
+    boost::function<Signature>& DynamicLibrary::resolveFunction(
+        boost::function<Signature>& function, const std::string& symbol)
+    {
+        if (isLoad()) {
+            resolveFunction<Signature>(function, libraryHandle_, symbol);
+        }
+        else {
+            lastErrorMessage_.clear();
+            errorCode_ = LoaderError::LIBRARY_NOT_LOADED;
+        }
+
+        return function;
+    }
+
+    template <typename Signature>
+    boost::function<Signature> DynamicLibrary::resolveFunction(
+        const std::string& symbol)
+    {
+        boost::function<Signature> function;
+        return resolveFunction<Signature>(function, symbol);
+    }
+
+    //
+    // Private members for symbol resolution
+    //
+
+    template <typename Type>
+    Type*& DynamicLibrary::resolve(Type*& pointer, void* handle,
         const std::string& symbol)
     {
         DynamicLibrary::dlerror();
@@ -328,6 +321,20 @@ namespace dl
         }
 
         return pointer;
+    }
+
+    template <typename Signature>
+    boost::function<Signature>&
+    DynamicLibrary::resolveFunction(boost::function<Signature>& function,
+        void* handle, const std::string& symbol)
+    {
+        typename boost::add_pointer<Signature>::type address;
+        resolve<Signature>(address, handle, symbol);
+        if (errorCode_ == std::errc::success) {
+            function = address;
+        }
+
+        return function;
     }
 
     //

@@ -1,7 +1,7 @@
 /*
  * glob.hpp - Find pathnames matching a pattern
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ namespace glob
             };
 
             Glob(const std::string& pattern, GlobFlags flags = NONE);
+            virtual ~Glob() {};
 
             //
             // Overloaded cast operators to get the list of path names found
@@ -77,7 +78,7 @@ namespace glob
             // Error handling
             //
 
-            const ErrorsType& getErrors() const
+            const ErrorsType& errors() const
                 { return errors_; }
 
             //
@@ -86,13 +87,13 @@ namespace glob
 
             static std::string escape(const std::string& pattern);
 
-        protected:
+        private:
              ErrorsType errors_;
 
              virtual bool onError(const std::string& pathName,
                  std::error_code errorCode);
 
-        private:
+
              std::vector<std::string> pathNames_;
 
              friend int onGlobError(const char* epath, int eerrno);

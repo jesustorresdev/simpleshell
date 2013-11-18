@@ -4,7 +4,7 @@
  *
  * Simple framework for writing line-oriented command interpreters
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,62 +22,38 @@
 #ifndef BASE_HPP_
 #define BASE_HPP_
 
-#include <cerrno>
 #include <iostream>
-#include <map>
 #include <string>
 
 #include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <cli/callbacks.hpp>
 #include <cli/readline.hpp>
+#include <cli/traits.hpp>
 #include <cli/utility.hpp>
 
 namespace cli
 {
     //
-    // Class ParseError
-    //
-    // Type used to return parse errors to the interpreter.
-    //
-
-    struct ParseError
-    {
-        ParseError(bool fail = false)
-            : fail_(fail), what_()
-        {}
-
-        ParseError(const std::string& what)
-            : fail_(true), what_(what)
-        {}
-
-        virtual ~ParseError() throw() {}
-
-        virtual ParseError& operator= (const ParseError& other)
-            { fail_ = other.fail_; what_ = other.what_; return *this; }
-
-        virtual operator bool() const
-            { return fail_; }
-
-        virtual const char* what() const
-            { return what_.c_str(); }
-
-        protected:
-            bool fail_;
-            std::string what_;
-    };
-
-    //
     // Class CommandLineInterpreterBase
     //
 
-    template <typename Arguments>
+    template <typename Parser>
     class CommandLineInterpreterBase
     {
         public:
-	        typedef CommandLineInterpreterBase<Arguments> Type;
-	        typedef Arguments ArgumentsType;
-	        typedef ParseError ParseErrorType;
+            typedef CommandLineInterpreterBase<Parser> Type;
+
+            typedef Parser ParserType;
+            typedef typename cli::traits::ParserTraits<Parser>::ArgumentsType
+                CommandArgumentsType;
+            typedef typename cli::traits::ParserTraits<Parser>::ErrorType
+                ParseErrorType;
+
+            typedef bool (ParserSignature)(
+                std::string::const_iterator&, std::string::const_iterator,
+                std::string&, CommandArgumentsType&, ParseErrorType&);
 
             //
             // Class constructors
@@ -87,75 +63,60 @@ namespace cli
             CommandLineInterpreterBase(std::istream& in, std::ostream& out,
                 std::ostream& err = std::cerr, bool useReadline = true);
 
+            CommandLineInterpreterBase(
+                const boost::function<ParserSignature>& parser,
+                bool useReadline = true);
+            CommandLineInterpreterBase(
+                const boost::function<ParserSignature>& parser,
+                std::istream& in, std::ostream& out,
+                std::ostream& err = std::cerr, bool useReadline = true);
+
+            CommandLineInterpreterBase(
+                boost::shared_ptr<Parser> parser,
+                bool useReadline = true);
+            CommandLineInterpreterBase(
+                boost::shared_ptr<Parser> parser,
+                std::istream& in, std::ostream& out,
+                std::ostream& err = std::cerr, bool useReadline = true);
+
             virtual ~CommandLineInterpreterBase() {};
 
             //
-            // Methods to interpret command-line input
+            // Members to interpret command-line input
             //
 
             void loop();
             bool interpretOneLine(std::string line);
 
             //
-            // I/O streams getters
+            // Members to manage the command history
             //
 
-            std::istream& getInStream() const
-                { return in_; }
-            std::ostream& getOutStream() const
-                { return out_; }
-            std::ostream& getErrStream() const
-                { return err_; }
-
-            //
-            // Other attributes getters & setters
-            //
-
-            const std::string& getLastCommand() const
+            const std::string& lastCommand() const
                 { return lastCommand_; }
 
-            void setIntroText(const std::string& intro)
+            void historyFile(const std::string& fileName);
+
+            //
+            // Members to configure the user interface
+            //
+
+            void introText(const std::string& intro)
                 { introText_ = intro; }
-            void setPromptText(const std::string& prompt)
+            void promptText(const std::string& prompt)
                 { promptText_ = prompt; }
-            void setHistoryFile(const std::string& fileName);
 
             //
-            // Callback functions setter
+            // Accessors of callback functions
             //
 
-            template <template <typename> class Callback, typename Functor>
-            void setCallback(Functor function);
-            template <template <typename> class Callback, typename Functor,
-                typename Argument>
-            void setCallback(Functor function, Argument argument);
-
-        protected:
-
-            //
-            // Hook methods invoked for command execution
-            //
-
-            virtual bool doCommand(const std::string& command,
-            	Arguments const& arguments);
-            virtual bool emptyLine();
-
-            //
-            // Hook methods invoked inside interpretOneLine()
-            //
-
-            virtual void preDoCommand(std::string& line) {};
-            virtual bool postDoCommand(bool isFinished,
-                const std::string& line);
-            virtual bool parseError(ParseError const& error,
-                const std::string& line);
-
-            //
-            // Hook methods invoked once inside loop()
-            //
-
-            virtual void preLoop();
-            virtual void postLoop();
+            cli::callback::RunCommandCallback<ParserType> onRunCommand;
+            cli::callback::ParseErrorCallback<ParserType> onParseError;
+            cli::callback::EmptyLineCallback onEmptyLine;
+            cli::callback::PreRunCommandCallback onPreRunCommand;
+            cli::callback::PostRunCommandCallback onPostRunCommand;
+            cli::callback::PreLoopCallback onPreLoop;
+            cli::callback::PostLoopCallback onPostLoop;
 
         private:
             std::istream& in_;
@@ -167,64 +128,104 @@ namespace cli
             std::string promptText_;
             std::string lastCommand_;
 
-            //
-            // Callback function objects
-            //
-
-            CLI_DECLARE_CALLBACKS_TPL(
-                Type,
-                (DoCommandCallback, defaultDoCommandCallback_)
-                (EmptyLineCallback, emptyLineCallback_)
-                (PreDoCommandCallback, preDoCommandCallback_)
-                (PostDoCommandCallback, postDoCommandCallback_)
-                (ParseErrorCallback, parseErrorCallback_)
-                (PreLoopCallback, preLoopCallback_)
-                (PostLoopCallback, postLoopCallback_)
-            )
-
-  	    	typedef std::map<std::string,
-                boost::function<DoCommandCallback> > DoCommandCallbacks;
-            DoCommandCallbacks doCommandCallbacks_;
-
-            template <int M>
-            struct SetCallbackImpl<cli::callback::DoCommandCallback, 1, M>
-            {
-                template <typename T, typename Functor>
-                static void setCallback(T& interpreter, Functor function,
-                    const std::string& command)
-                    { interpreter.doCommandCallbacks_[command] = function; }
-            };
+            boost::shared_ptr<Parser> parserObject_;
+            boost::function<ParserSignature> parser_;
 
             //
-            // Parser handling
+            // Hook methods invoked for command execution
             //
 
-            virtual ParseError& parse(std::string::const_iterator& begin,
-                std::string::const_iterator end, std::string& command,
-                Arguments& arguments) = 0;
+            virtual bool runCommand(const std::string& command,
+                CommandArgumentsType const& arguments);
+            virtual bool emptyLine();
+
+            //
+            // Hook methods invoked inside interpretOneLine()
+            //
+
+            virtual void preRunCommand(std::string& line) {};
+            virtual bool postRunCommand(bool isFinished,
+                const std::string& line);
+            virtual bool parseError(ParseErrorType const& error,
+                const std::string& line);
+
+            //
+            // Hook methods invoked once inside loop()
+            //
+
+            virtual void preLoop();
+            virtual void postLoop();
     };
 
-    template <typename Arguments>
-    CommandLineInterpreterBase<Arguments>::CommandLineInterpreterBase(
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
         bool useReadline)
         : in_(std::cin),
           out_(std::cout),
           err_(std::cerr),
-          readLine_(useReadline)
+          readLine_(useReadline),
+          parserObject_(new Parser),
+          parser_(*parserObject_)
     {}
 
-    template <typename Arguments>
-    CommandLineInterpreterBase<Arguments>::CommandLineInterpreterBase(
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
         std::istream& in, std::ostream& out, std::ostream& err,
         bool useReadline)
         : in_(in),
           out_(out),
           err_(err),
-          readLine_(useReadline)
+          readLine_(useReadline),
+          parserObject_(new Parser),
+          parser_(*parserObject_)
     {}
 
-    template <typename Arguments>
-    void CommandLineInterpreterBase<Arguments>::loop()
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
+        const boost::function<ParserSignature>& parser, bool useReadline)
+        : in_(std::cin),
+          out_(std::cout),
+          err_(std::cerr),
+          readLine_(useReadline),
+          parser_(parser)
+    {}
+
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
+        const boost::function<ParserSignature>& parser, std::istream& in,
+        std::ostream& out, std::ostream& err, bool useReadline)
+        : in_(in),
+          out_(out),
+          err_(err),
+          readLine_(useReadline),
+          parser_(parser)
+    {}
+
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
+        boost::shared_ptr<Parser> parser, bool useReadline)
+        : in_(std::cin),
+          out_(std::cout),
+          err_(std::cerr),
+          readLine_(useReadline),
+          parserObject_(parser),
+          parser_(*parser)
+    {}
+
+    template <typename Parser>
+    CommandLineInterpreterBase<Parser>::CommandLineInterpreterBase(
+        boost::shared_ptr<Parser> parser, std::istream& in,
+        std::ostream& out, std::ostream& err, bool useReadline)
+        : in_(in),
+          out_(out),
+          err_(err),
+          readLine_(useReadline),
+          parserObject_(parser),
+          parser_(*parser)
+    {}
+
+    template <typename Parser>
+    void CommandLineInterpreterBase<Parser>::loop()
     {
         using utility::detail::isStreamTty;
 
@@ -249,11 +250,11 @@ namespace cli
         postLoop();
     }
 
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::interpretOneLine(
+    template <typename Parser>
+    bool CommandLineInterpreterBase<Parser>::interpretOneLine(
         std::string line)
     {
-        preDoCommand(line);
+        preRunCommand(line);
 
         if (utility::detail::isLineEmpty(line)) {
             return emptyLine();
@@ -266,17 +267,18 @@ namespace cli
         std::string::const_iterator end = line.end();
         while (begin != end) {
             std::string command;
-            Arguments arguments;
-            ParseError error = parse(begin, end, command, arguments);
+            CommandArgumentsType arguments;
+            ParseErrorType error;
+            bool success = parser_(begin, end, command, arguments, error);
 
             bool isFinished;
-            if (error) {
+            if (! success) {
                 isFinished = parseError(error, line);
                 return isFinished;
             }
             else {
-                isFinished = doCommand(command, arguments);
-                isFinished = postDoCommand(isFinished, line);
+                isFinished = runCommand(command, arguments);
+                isFinished = postRunCommand(isFinished, line);
                 if (isFinished)
                     return true;
             }
@@ -284,90 +286,63 @@ namespace cli
         return false;
     }
 
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::doCommand(
-        const std::string& command, Arguments const& arguments)
-    {
-        typename DoCommandCallbacks::const_iterator i;
-        i = doCommandCallbacks_.find(command);
-        if (i == doCommandCallbacks_.end()) {
-            return defaultDoCommandCallback_.empty() ?
-                false : defaultDoCommandCallback_(command, arguments);
-        }
-        else {
-            return i->second(command, arguments);
-        }
-    }
-
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::emptyLine()
-    {
-        return emptyLineCallback_.empty() ? false : emptyLineCallback_();
-    }
-
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::postDoCommand(bool isFinished,
-        const std::string& line)
-    {
-        return postDoCommandCallback_.empty() ?
-            isFinished : postDoCommandCallback_(isFinished, line);
-    }
-
-    template <typename Arguments>
-    bool CommandLineInterpreterBase<Arguments>::parseError(
-        ParseError const& error, const std::string& line)
-    {
-        if (parseErrorCallback_.empty()) {
-            err_ << ::program_invocation_short_name
-                  << ": "
-                  << error.what()
-                  << std::endl;
-            return false;
-        }
-        return parseErrorCallback_(error, line);
-    }
-
-    template <typename Arguments>
-    void CommandLineInterpreterBase<Arguments>::preLoop()
-    {
-        if (! preLoopCallback_.empty()) {
-            preLoopCallback_();
-        }
-    }
-
-    template <typename Arguments>
-    void CommandLineInterpreterBase<Arguments>::postLoop()
-    {
-        if (! postLoopCallback_.empty()) {
-            postLoopCallback_();
-        }
-    }
-
-    template <typename Arguments>
-    void CommandLineInterpreterBase<Arguments>::setHistoryFile(
+    template <typename Parser>
+    void CommandLineInterpreterBase<Parser>::historyFile(
         const std::string& fileName)
     {
         readLine_.clearHistory();
-        readLine_.setHistoryFile(fileName);
+        readLine_.historyFile(fileName);
     }
 
-    template <typename Arguments>
-    template <template <typename> class Callback, typename Functor>
-    void CommandLineInterpreterBase<Arguments>::setCallback(Functor function)
+    template <typename Parser>
+    bool CommandLineInterpreterBase<Parser>::runCommand(
+        const std::string& command, CommandArgumentsType const& arguments)
     {
-        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
-        SetCallbackImpl<Callback, 0, 0>::setCallback(*this, function);
+        return onRunCommand ? onRunCommand.call(command, arguments) : false;
     }
 
-    template <typename Arguments>
-    template <template <typename> class Callback, typename Functor,
-        typename Argument>
-    void CommandLineInterpreterBase<Arguments>::setCallback(Functor function,
-        Argument argument)
+    template <typename Parser>
+    bool CommandLineInterpreterBase<Parser>::emptyLine()
     {
-        CLI_CALLBACK_SIGNATURE_ASSERT_TPL(Callback, Functor);
-        SetCallbackImpl<Callback, 1, 0>::setCallback(*this,
-            function, argument);
+        return onEmptyLine ? onEmptyLine.call() : false;
+    }
+
+    template <typename Parser>
+    bool CommandLineInterpreterBase<Parser>::postRunCommand(bool isFinished,
+        const std::string& line)
+    {
+        return onPostRunCommand ?
+            onPostRunCommand.call(isFinished, line) : isFinished;
+    }
+
+    template <typename Parser>
+    void CommandLineInterpreterBase<Parser>::preLoop()
+    {
+        if (onPreLoop) {
+            onPreLoop.call();
+        }
+    }
+
+    template <typename Parser>
+    void CommandLineInterpreterBase<Parser>::postLoop()
+    {
+        if (onPostLoop) {
+            onPostLoop.call();
+        }
+    }
+
+    template <typename Parser>
+    bool CommandLineInterpreterBase<Parser>::parseError(
+        ParseErrorType const& error, const std::string& line)
+    {
+        if (! onParseError) {
+            err_ << cli::utility::programShortName()
+                 << ": "
+                 << cli::utility::parseErrorToStdString(error)
+                 << std::endl;
+            return false;
+        }
+        return onParseError.call(error, line);
     }
 }
 

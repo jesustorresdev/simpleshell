@@ -1,7 +1,7 @@
 /*
  * shell.cpp - Interpreter designed to emulate a very simple shell
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
 #include <cli/shell.hpp>
+#include <cli/utility.hpp>
 
 //
 // Adaptors from CommandArguments classes to Boost.Fusion sequences. They are
@@ -49,11 +50,11 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::shellparser::CommandArguments,
+    cli::parser::shellparser::Arguments,
     (std::vector<cli::parser::shellparser::VariableAssignment>, variables)
     (std::vector<std::string>, arguments)
     (std::vector<cli::parser::shellparser::StdioRedirection>, redirections)
-    (cli::parser::shellparser::CommandArguments::TypeOfTerminator, terminator)
+    (cli::parser::shellparser::Arguments::TypeOfTerminator, terminator)
 )
 
 namespace cli { namespace parser { namespace shellparser
@@ -172,7 +173,7 @@ namespace cli { namespace parser { namespace shellparser
         );
         start = command [
              at_c<1>(_val) = _1,
-             at_c<0>(_val) = bind(&CommandArguments::getCommandName, _1)
+             at_c<0>(_val) = bind(&Arguments::getCommandName, _1)
         ];
 
         character.name(translate("character"));
@@ -213,40 +214,44 @@ namespace cli
     //
 
     ShellInterpreter::ShellInterpreter(bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
-            useReadline)
+        : BaseType(boost::shared_ptr<SpiritGrammarType>(
+            new SpiritGrammarType(*this)), useReadline)
     {}
 
     ShellInterpreter::ShellInterpreter(std::istream& in, std::ostream& out,
         std::ostream& err, bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
-            in, out, err, useReadline)
+        : BaseType(boost::shared_ptr<SpiritGrammarType>(
+            new SpiritGrammarType(*this)), in, out, err, useReadline)
     {}
 
     std::string ShellInterpreter::variableLookup(const std::string& name)
-        {
-        return variableLookupCallback_.empty() ?
-            std::string() : variableLookupCallback_(name);
-        }
+    {
+        return onVariableLookup ?
+            onVariableLookup.call(name) : std::string();
+    }
 
     std::vector<std::string> ShellInterpreter::pathnameExpansion(
         const std::string& pattern)
     {
-        if (! pathnameExpansionCallback_.empty()) {
-            return pathnameExpansionCallback_(pattern);
+        if (onPathnameExpansion) {
+            return onPathnameExpansion.call(pattern);
         }
 
         using namespace glob;
 
+#if defined(_GNU_SOURCE)
         Glob glob(pattern, Glob::EXPAND_BRACE_EXPRESSIONS |
-            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE_WITH_CHECK);
+            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE);
+#else
+        Glob glob(pattern, Glob::NO_PATH_NAMES_CHECK);
+#endif /* _GNU_SOURCE */
 
-        Glob::ErrorsType errors = glob.getErrors();
+        Glob::ErrorsType errors = glob.errors();
         for (Glob::ErrorsType::const_iterator i = errors.begin();
             i < errors.end(); ++i)
         {
             std::cerr
-                << ::program_invocation_short_name
+                << cli::utility::programShortName()
                 << ": "
                 << translate("i/o error at")
                 << " "
