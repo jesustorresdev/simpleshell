@@ -1,8 +1,7 @@
 /*
- * basic_spirit.cpp - Support for command interpreters which uses parsers
- *                    based on Boost.Spirit
+ * basic_spirit.cpp - Adapter class for parsers based on Boost.Spirit
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +16,15 @@
  * limitations under the License.
  */
 
+#include <string>
+
+#include <boost/spirit/include/qi_expect.hpp>
+
+#define translate(str) str  // TODO: Use Boost.Locale when available
+
 #include <cli/basic_spirit.hpp>
 
-namespace cli
+namespace cli { namespace parser { namespace spiritparser
 {
     //
     // Class SpiritParseError
@@ -27,26 +32,23 @@ namespace cli
     // Type used to return parse errors to the interpreter.
     //
 
-    SpiritParseError::SpiritParseError(bool fail)
-        : ParseError(fail),
-          expectationFailureWhat(""),
+    SpiritParseError::SpiritParseError()
+        : expectationFailureWhat_(""),
           expectationFailure_(false)
-    {
-        what_ = fail ? translate("syntax error") : "";
-    }
+    {}
 
     SpiritParseError::SpiritParseError(const std::string& what)
-        : ParseError(what),
-          expectationFailureWhat(""),
+        : what_(what),
+          expectationFailureWhat_(""),
           expectationFailure_(false)
     {}
 
     SpiritParseError::SpiritParseError(
         const qi::expectation_failure<std::string::const_iterator>& e)
-        : ParseError(true),
-          expectationFailureFirst(e.first),
-          expectationFailureLast(e.last),
-          expectationFailureWhat(e.what_),
+        : what_(),
+          expectationFailureFirst_(e.first),
+          expectationFailureLast_(e.last),
+          expectationFailureWhat_(e.what_),
           expectationFailure_(true)
     {
         what_ += translate("syntax error, expecting");
@@ -54,13 +56,4 @@ namespace cli
         what_ += (e.first == e.last) ? translate("<end-of-line>") :
             std::string(e.first, e.last);
     }
-
-    SpiritParseError& SpiritParseError::operator= (
-        const SpiritParseError& other)
-    {
-        fail_ = other.fail_;
-        what_ = other.what_;
-        expectationFailure_ = other.expectationFailure_;
-        return *this;
-    }
-}
+}}}

@@ -25,6 +25,10 @@
 #include <vector>
 
 #include <boost/shared_array.hpp>
+#include <boost/type_traits/is_convertible.hpp>
+#include <boost/utility/enable_if.hpp>
+
+#define translate(str) str  // TODO: Use Boost.Locale when available
 
 #include <cli/chart_literal.hpp>
 #include <cli/prettyprint.hpp>
@@ -46,6 +50,26 @@ namespace cli { namespace utility
 
     boost::shared_array<char*> stdVectorStringToSmartArgV(
         const std::vector<std::string> &strings);
+
+    //
+    // Function for parse error type to std::string conversion
+    //
+
+    template <typename T>
+    typename boost::enable_if<
+        boost::is_convertible<T, std::string>, std::string>::type
+    parseErrorToStdString(T const& error)
+    {
+        return static_cast<std::string>(error);
+    }
+
+    template <typename T>
+    typename  boost::disable_if<
+        boost::is_convertible<T, std::string>, std::string>::type
+    parseErrorToStdString(T const& error)
+    {
+        return std::string(translate("parse error"));
+    }
 }}
 
 //

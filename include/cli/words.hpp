@@ -36,13 +36,14 @@ namespace cli { namespace parser { namespace wordsparser
     namespace iso8859_1 = boost::spirit::iso8859_1;
     namespace fusion = boost::fusion;
 
-    typedef std::vector<std::string> CommandArguments;
+    typedef std::vector<std::string> Arguments;
 
     //
     // Class WordsParser
     //
-    // The parser must return a two-references Sequence. They have to refer to
-    // the name and the arguments of parsed command respectively.
+    // Because it is used together with BasicSpiritParser, this parser must
+    // return a two-references Sequence. They have to refer to the name and
+    // the arguments of parsed command respectively.
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
@@ -52,7 +53,7 @@ namespace cli { namespace parser { namespace wordsparser
     template <typename Iterator>
     struct WordsParser
         : qi::grammar<Iterator,
-              fusion::vector<std::string&, CommandArguments&>(),
+              fusion::vector<std::string&, Arguments&>(),
               iso8859_1::space_type>
     {
         WordsParser();
@@ -69,16 +70,27 @@ namespace cli { namespace parser { namespace wordsparser
         qi::rule<Iterator, std::string(),
             iso8859_1::space_type> doubleQuotedString;
         qi::rule<Iterator, std::string(), iso8859_1::space_type> argument;
-        qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
+        qi::rule<Iterator, fusion::vector<std::string&, Arguments&>(),
             iso8859_1::space_type> start;
     };
 }}}
 
 namespace cli
 {
-    using namespace cli::parser::wordsparser;
+    using namespace cli::parser;
 
-    typedef CommandArguments WordsArguments;
+    typedef wordsparser::Arguments WordsArguments;
+
+    namespace traits
+    {
+        template <>
+        struct ParserTraits<spiritparser::BasicSpiritParser<WordsArguments,
+            wordsparser::WordsParser> >
+        {
+            typedef WordsArguments ArgumentsType;
+            typedef spiritparser::SpiritParseError ErrorType;
+        };
+    }
 
     //
     // Class WordsInterpreter
@@ -86,17 +98,8 @@ namespace cli
     // Interpreter which uses WordsParser to parse the command line.
     //
 
-    class WordsInterpreter
-    : public BasicSpiritInterpreter<WordsArguments, WordsParser>
-    {
-        public:
-            typedef BasicSpiritInterpreter<CommandArguments, WordsParser>
-                BaseType;
-
-            WordsInterpreter(bool useReadline = true);
-            WordsInterpreter(std::istream& in, std::ostream& out,
-                std::ostream& err, bool useReadline = true);
-    };
+    typedef cli::BasicSpiritInterpreter<WordsArguments,
+        wordsparser::WordsParser> WordsInterpreter;
 }
 
 #endif /* WORDS_HPP_ */

@@ -1,8 +1,7 @@
 /*
- * basic_spirit.hpp - Support for command interpreters which uses parsers
- *                    based on Boost.Spirit
+ * basic_spirit.hpp - Adapter class for parsers based on Boost.Spirit
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +20,7 @@
 #define BASIC_SPIRIT_HPP_
 
 #include <iostream>
-#include <stdexcept>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -31,7 +30,7 @@
 
 #define translate(str) str  // TODO: Use Boost.Locale when available
 
-namespace cli
+namespace cli { namespace parser { namespace spiritparser
 {
     namespace qi = boost::spirit::qi;
 
@@ -41,8 +40,20 @@ namespace cli
     // Type used to return parse errors to the interpreter.
     //
 
-    struct SpiritParseError : public ParseError
+    struct SpiritParseError
     {
+        //
+        // Class constructors
+        //
+
+        SpiritParseError();
+        SpiritParseError(const std::string& what);
+        SpiritParseError(
+            const qi::expectation_failure<std::string::const_iterator>& e);
+
+        const std::string& what() const
+            { return what_; }
+
         //
         // These attributes will only contains valid values if
         // hasExpectationFailure() returns true. For a description of it,
@@ -50,29 +61,81 @@ namespace cli
         // documentation.
         //
 
-        std::string::const_iterator expectationFailureFirst;
-        std::string::const_iterator expectationFailureLast;
-        boost::spirit::info expectationFailureWhat;
-
-        //
-        // Class constructors
-        //
-
-        SpiritParseError(bool fail = false);
-        SpiritParseError(const std::string& what);
-        SpiritParseError(
-            const qi::expectation_failure<std::string::const_iterator>& e);
-
-        ~SpiritParseError() throw() {}
-
-        SpiritParseError& operator= (const SpiritParseError& other);
+        const std::string::const_iterator& expectationFailureFirst() const
+            { return expectationFailureFirst_; }
+        const std::string::const_iterator& expectationFailureLast() const
+            { return expectationFailureLast_; }
+        const boost::spirit::info& expectationFailureWhat() const
+            { return expectationFailureWhat_; }
 
         bool hasExpectationFailure() const
             { return expectationFailure_; }
 
-        protected:
+        private:
+            std::string what_;
+
+            std::string::const_iterator expectationFailureFirst_;
+            std::string::const_iterator expectationFailureLast_;
+            boost::spirit::info expectationFailureWhat_;
             bool expectationFailure_;
     };
+
+    //
+    // Class BasicSpiritParser
+    //
+    // Adapter class template for parsers based on Boost.Spirit.
+    //
+
+    template <typename Arguments, template <typename> class Grammar>
+    class BasicSpiritParser
+    {
+        public:
+            typedef BasicSpiritParser<Arguments, Grammar> Type;
+            typedef Grammar<std::string::const_iterator> GrammarType;
+
+            BasicSpiritParser()
+                : grammar_(new GrammarType)
+            {}
+
+            BasicSpiritParser(boost::shared_ptr<GrammarType> grammar)
+                : grammar_(grammar)
+            {}
+
+            bool operator()(std::string::const_iterator& begin,
+                std::string::const_iterator end, std::string& command,
+                Arguments& arguments, SpiritParseError& error)
+            {
+                // Passing the attributes 'command' and 'arguments' to the
+                // parser forces that every valid grammar must return a
+                // two-references Sequence.
+                try {
+                    bool success = qi::phrase_parse(begin, end, *grammar_,
+                        skipper_, command, arguments);
+                    if (success) {
+                        return true;
+                    }
+                    error = SpiritParseError(translate("syntax error"));
+                    return false;
+                }
+                catch (const qi::expectation_failure<
+                    std::string::const_iterator>& e)
+                {
+                    error = SpiritParseError(e);
+                    return false;
+                }
+            }
+
+        private:
+            typename GrammarType::skipper_type skipper_;
+
+            boost::shared_ptr<GrammarType> grammar_;
+            SpiritParseError parseError_;
+    };
+}}}
+
+namespace cli
+{
+    using namespace cli::parser::spiritparser;
 
     //
     // Class BasicSpiritInterpreter
@@ -81,50 +144,37 @@ namespace cli
     // on Boost.Spirit.
     //
 
-    template <typename Arguments, template <typename> class Parser>
-    class BasicSpiritInterpreter : public CommandLineInterpreterBase<Arguments>
+    template <typename Arguments, template <typename> class Grammar>
+    struct BasicSpiritInterpreter
+        : public CommandLineInterpreterBase<
+              BasicSpiritParser<Arguments, Grammar> >
     {
-        public:
-            typedef BasicSpiritInterpreter<Arguments, Parser> Type;
-            typedef Parser<std::string::const_iterator> ParserType;
+        typedef BasicSpiritParser<Arguments, Grammar> SpiritParserType;
+        typedef typename SpiritParserType::GrammarType SpiritGrammarType;
 
-            BasicSpiritInterpreter(boost::shared_ptr<ParserType> parser,
-                bool useReadline = true)
-                : CommandLineInterpreterBase<Arguments>(useReadline),
-                  parser_(parser)
-            {}
+        typedef CommandLineInterpreterBase<SpiritParserType> BaseType;
 
-            BasicSpiritInterpreter(boost::shared_ptr<ParserType> parser,
-                std::istream& in, std::ostream& out,
-                std::ostream& err, bool useReadline = true)
-                : CommandLineInterpreterBase<Arguments>(in, out, err,
-                    useReadline),
-                  parser_(parser)
-           {}
+        BasicSpiritInterpreter(bool useReadline = true)
+            : BaseType(useReadline)
+        {}
 
-        private:
-            boost::shared_ptr<ParserType> parser_;
-            typename ParserType::skipper_type skipperParser_;
-            SpiritParseError parseError_;
+        BasicSpiritInterpreter(std::istream& in, std::ostream& out,
+            std::ostream& err = std::cerr, bool useReadline = true)
+            : BaseType(in, out, err, useReadline)
+        {}
 
-            virtual SpiritParseError& parse(std::string::const_iterator& begin,
-                std::string::const_iterator end, std::string& command,
-                Arguments& arguments)
-            {
-                // Passing the attributes 'command' and 'arguments' to the
-                // parser forces that every valid grammar must return a
-                // two-references Sequence.
-                try {
-                    bool success = qi::phrase_parse(begin, end, *parser_,
-                        skipperParser_, command, arguments);
-                    parseError_ = SpiritParseError(!success);
-                }
-                catch (qi::expectation_failure<std::string::const_iterator> e)
-                {
-                    parseError_ = SpiritParseError(e);
-                }
-                return parseError_;
-            }
+        BasicSpiritInterpreter(boost::shared_ptr<SpiritGrammarType> grammar,
+            bool useReadline = true)
+            : BaseType(boost::shared_ptr<SpiritParserType>(
+                new SpiritParserType(grammar)), useReadline)
+        {}
+
+        BasicSpiritInterpreter(boost::shared_ptr<SpiritGrammarType> grammar,
+            std::istream& in, std::ostream& out, std::ostream& err = std::cerr,
+            bool useReadline = true)
+            : BaseType(boost::shared_ptr<SpiritParserType>(
+                new SpiritParserType(grammar)), in, out, err, useReadline)
+        {}
     };
 }
 
