@@ -16,8 +16,8 @@
 # limitations under the License.
 #
 
-SET (CLI_SOURCE ${CLI_SOURCE} basic_spirit.cpp command.cpp dl.cpp fileno.cpp
-                              glob.cpp prettyprint.cpp readline.cpp shell.cpp
+SET (CLI_SOURCE ${CLI_SOURCE} basic_spirit.cpp dl.cpp fileno.cpp glob.cpp
+                              prettyprint.cpp readline.cpp shell.cpp simple.cpp
                               utility.cpp words.cpp)
 
 # Build static library

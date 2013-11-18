@@ -50,11 +50,11 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
-    cli::parser::shellparser::CommandArguments,
+    cli::parser::shellparser::Arguments,
     (std::vector<cli::parser::shellparser::VariableAssignment>, variables)
     (std::vector<std::string>, arguments)
     (std::vector<cli::parser::shellparser::StdioRedirection>, redirections)
-    (cli::parser::shellparser::CommandArguments::TypeOfTerminator, terminator)
+    (cli::parser::shellparser::Arguments::TypeOfTerminator, terminator)
 )
 
 namespace cli { namespace parser { namespace shellparser
@@ -173,7 +173,7 @@ namespace cli { namespace parser { namespace shellparser
         );
         start = command [
              at_c<1>(_val) = _1,
-             at_c<0>(_val) = bind(&CommandArguments::getCommandName, _1)
+             at_c<0>(_val) = bind(&Arguments::getCommandName, _1)
         ];
 
         character.name(translate("character"));
@@ -214,14 +214,14 @@ namespace cli
     //
 
     ShellInterpreter::ShellInterpreter(bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
-            useReadline)
+        : BaseType(boost::shared_ptr<SpiritGrammarType>(
+            new SpiritGrammarType(*this)), useReadline)
     {}
 
     ShellInterpreter::ShellInterpreter(std::istream& in, std::ostream& out,
         std::ostream& err, bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType(*this)),
-            in, out, err, useReadline)
+        : BaseType(boost::shared_ptr<SpiritGrammarType>(
+            new SpiritGrammarType(*this)), in, out, err, useReadline)
     {}
 
     std::string ShellInterpreter::variableLookup(const std::string& name)

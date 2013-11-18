@@ -25,6 +25,8 @@
 
 #include <boost/function.hpp>
 
+#include <cli/traits.hpp>
+
 namespace cli { namespace callback
 {
     template <typename Return, typename... Arguments>
@@ -51,19 +53,20 @@ namespace cli { namespace callback
     // Callback types for cli::CommandLineInterpreterBase class
     //
 
-    template <typename Interpreter>
+    template <typename Parser>
     class RunCommandCallback
         : public Callback<bool, const std::string&,
-            typename Interpreter::ArgumentsType const&>
+              typename cli::traits::ParserTraits<Parser>::ArgumentsType const&>
     {
         public:
-            typedef typename Interpreter::ArgumentsType ArgumentsType;
+            typedef typename cli::traits::ParserTraits<Parser>::ArgumentsType
+                CommandArgumentsType;
             typedef Callback<bool, const std::string&,
-                ArgumentsType const&> BaseType;
+                CommandArgumentsType const&> BaseType;
             typedef typename BaseType::Signature Signature;
 
             bool call(const std::string& command,
-                ArgumentsType const& arguments) const
+                CommandArgumentsType const& arguments) const
             {
                 typename std::map<std::string,
                     boost::function<Signature> >::const_iterator i;
@@ -88,17 +91,18 @@ namespace cli { namespace callback
             std::map<std::string, boost::function<Signature> > callbacks_;
     };
 
+    template <typename Parser>
+    struct ParseErrorCallback
+        : public Callback<bool,
+              typename cli::traits::ParserTraits<Parser>::ErrorType const&,
+              const std::string&>
+    {};
+
     typedef Callback<bool> EmptyLineCallback;
     typedef Callback<void, std::string&> PreRunCommandCallback;
     typedef Callback<bool, bool, const std::string&> PostRunCommandCallback;
     typedef Callback<void> PreLoopCallback;
     typedef Callback<void> PostLoopCallback;
-
-    template <typename Interpreter>
-    struct ParseErrorCallback
-        : public Callback<bool, typename Interpreter::ParseErrorType const&,
-            const std::string&>
-    {};
 
     //
     // Callback types for cli::ShellInterpreter class

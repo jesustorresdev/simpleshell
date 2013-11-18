@@ -2,7 +2,7 @@
  * words.cpp - Interpreter that only splits the command arguments in words.
  *             It supports quoted strings
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,25 +87,3 @@ namespace cli { namespace parser { namespace wordsparser
 
     template class WordsParser<std::string::const_iterator>;
 }}}
-
-namespace cli
-{
-    using namespace cli::parser::wordsparser;
-
-    //
-    // Class WordsInterpreter
-    //
-    // Interpreter which uses WordsParser to parse the command line.
-    //
-
-    WordsInterpreter::WordsInterpreter(bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
-            useReadline)
-    {}
-
-    WordsInterpreter::WordsInterpreter(std::istream& in, std::ostream& out,
-        std::ostream& err, bool useReadline)
-        : BaseType(boost::shared_ptr<ParserType>(new ParserType()),
-            in, out, err, useReadline)
-    {}
-}

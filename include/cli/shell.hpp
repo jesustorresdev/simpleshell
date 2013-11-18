@@ -43,7 +43,7 @@ namespace cli { namespace parser { namespace shellparser
     namespace fusion = boost::fusion;
 
     //
-    // Class CommandArguments
+    // Class Arguments
     //
     // Stores the information provided by the parser ShellParser about the
     // command specified.
@@ -68,7 +68,7 @@ namespace cli { namespace parser { namespace shellparser
         std::string argument;
     };
 
-    struct CommandArguments
+    struct Arguments
     {
         enum TypeOfTerminator
         {
@@ -82,7 +82,7 @@ namespace cli { namespace parser { namespace shellparser
         std::vector<StdioRedirection> redirections;
         TypeOfTerminator terminator;
 
-        CommandArguments() : terminator(NORMAL) {}
+        Arguments() : terminator(NORMAL) {}
 
         std::string getCommandName() const
             { return arguments.empty() ? std::string() : arguments[0]; }
@@ -96,7 +96,7 @@ namespace cli { namespace parser { namespace shellparser
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os,
-        const CommandArguments& arguments)
+        const Arguments& arguments)
     {
         using namespace cli::prettyprint;
 
@@ -129,20 +129,20 @@ namespace cli { namespace parser { namespace shellparser
     template <typename CharT, typename Traits>
     std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os,
-        CommandArguments::TypeOfTerminator type)
+        Arguments::TypeOfTerminator type)
     {
         using namespace cli::prettyprint;
 
         if (isPrettyprintEnabled(os)) {
             switch (type) {
-            case CommandArguments::NORMAL:
-                os << "CommandArguments::NORMAL";
+            case Arguments::NORMAL:
+                os << "Arguments::NORMAL";
                 break;
-            case CommandArguments::BACKGROUNDED:
-                os << "CommandArguments::BACKGROUNDED";
+            case Arguments::BACKGROUNDED:
+                os << "Arguments::BACKGROUNDED";
                 break;
-            case CommandArguments::PIPED:
-                os << "CommandArguments::PIPED";
+            case Arguments::PIPED:
+                os << "Arguments::PIPED";
                 break;
             default:
                 os << "UNKNOWN" << '(' << static_cast<int>(type) << ')';
@@ -239,8 +239,9 @@ namespace cli { namespace parser { namespace shellparser
     //
     // Class ShellParser
     //
-    // The parser must return a two-references Sequence. They have to refer to
-    // the name and the arguments of parsed command respectively.
+    // Because it is used together with BasicSpiritParser, this parser must
+    // return a two-references Sequence. They have to refer to the name and
+    // the arguments of parsed command respectively.
     //
     // The parser uses ISO-8859 encoding to avoid problems with UTF-8 strings
     // because the Boost.Spirit support of ASCII encoding launches an
@@ -249,8 +250,7 @@ namespace cli { namespace parser { namespace shellparser
 
     template <typename Iterator>
     struct ShellParser
-        : qi::grammar<Iterator,
-              fusion::vector<std::string&, CommandArguments&>(),
+        : qi::grammar<Iterator, fusion::vector<std::string&, Arguments&>(),
               iso8859_1::space_type>
     {
         ShellParser(ShellInterpreter& interpreter);
@@ -273,24 +273,24 @@ namespace cli { namespace parser { namespace shellparser
         } redirectors;
 
         struct Terminators
-            : qi::symbols<char, CommandArguments::TypeOfTerminator>
+            : qi::symbols<char, Arguments::TypeOfTerminator>
         {
             Terminators()
             {
                 add
-                    (";", CommandArguments::NORMAL)
-                    ("&", CommandArguments::BACKGROUNDED)
+                    (";", Arguments::NORMAL)
+                    ("&", Arguments::BACKGROUNDED)
                 ;
             }
         } terminators;
 
         struct Pipe
-            : qi::symbols<char, CommandArguments::TypeOfTerminator>
+            : qi::symbols<char, Arguments::TypeOfTerminator>
         {
             Pipe()
             {
                 add
-                    ("|", CommandArguments::PIPED)
+                    ("|", Arguments::PIPED)
                 ;
             }
         } pipe;
@@ -314,8 +314,8 @@ namespace cli { namespace parser { namespace shellparser
         qi::rule<Iterator, VariableAssignment()> assignment;
         qi::rule<Iterator, StdioRedirection(),
             iso8859_1::space_type> redirection;
-        qi::rule<Iterator, CommandArguments(), iso8859_1::space_type> command;
-        qi::rule<Iterator, fusion::vector<std::string&, CommandArguments&>(),
+        qi::rule<Iterator, Arguments(), iso8859_1::space_type> command;
+        qi::rule<Iterator, fusion::vector<std::string&, Arguments&>(),
             iso8859_1::space_type> start;
 
         private:
@@ -335,12 +335,22 @@ namespace cli { namespace parser { namespace shellparser
 
 namespace cli
 {
-    using namespace cli::callback;
-    using namespace cli::parser::shellparser;
+    using namespace cli::parser;
 
-    typedef CommandArguments ShellArguments;
-    typedef VariableAssignment VariableAssignment;
-    typedef StdioRedirection StdioRedirection;
+    typedef shellparser::Arguments ShellArguments;
+    typedef shellparser::VariableAssignment VariableAssignment;
+    typedef shellparser::StdioRedirection StdioRedirection;
+
+    namespace traits
+    {
+        template <>
+        struct ParserTraits<spiritparser::BasicSpiritParser<ShellArguments,
+            shellparser::ShellParser> >
+        {
+            typedef ShellArguments ArgumentsType;
+            typedef spiritparser::SpiritParseError ErrorType;
+        };
+    }
 
     //
     // Class ShellInterpreter
@@ -350,34 +360,33 @@ namespace cli
     //
 
     class ShellInterpreter
-        : public BasicSpiritInterpreter<ShellArguments, ShellParser>
+        : public cli::BasicSpiritInterpreter<ShellArguments,
+              shellparser::ShellParser>
     {
         public:
-            typedef BasicSpiritInterpreter<ShellArguments, ShellParser>
-                BaseType;
+            typedef cli::BasicSpiritInterpreter<ShellArguments,
+                shellparser::ShellParser> BaseType;
 
             ShellInterpreter(bool useReadline = true);
             ShellInterpreter(std::istream& in, std::ostream& out,
-                std::ostream& err, bool useReadline = true);
-
-        protected:
-
-            //
-            // Hook methods
-            //
-
-            std::string variableLookup(const std::string& name);
-            std::vector<std::string> pathnameExpansion(
-                const std::string& pattern);
-
-        private:
+                std::ostream& err = std::cerr, bool useReadline = true);
 
             //
             // Accessors of callback functions
             //
 
-            VariableLookupCallback onVariableLookup;
-            PathnameExpansionCallback onPathnameExpansion;
+            cli::callback::VariableLookupCallback onVariableLookup;
+            cli::callback::PathnameExpansionCallback onPathnameExpansion;
+
+        private:
+
+            //
+            // Hook methods invoked during parsing
+            //
+
+            std::string variableLookup(const std::string& name);
+            std::vector<std::string> pathnameExpansion(
+                const std::string& pattern);
     };
 }
 
