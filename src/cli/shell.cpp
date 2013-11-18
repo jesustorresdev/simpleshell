@@ -33,7 +33,7 @@
 #include <cli/utility.hpp>
 
 //
-// Adaptors from CommandArguments classes to Boost.Fusion sequences. They are
+// Adaptors from Arguments classes to Boost.Fusion sequences. They are
 // required by the parser ShellParser. Must be defined at global scope.
 //
 

@@ -36,8 +36,8 @@ const char PROMPT_TEXT[] = "$ ";
 //
 // If this function returns true, the interpreter ends.
 //
-// cli::ShellArguments is an alias of cli::parser::shellparser::
-// CommandArguments. See include/cli/shell.hpp for its definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::Arguments.
+// See include/cli/shell.hpp for its definition.
 //
 
 bool onExit(const std::string& command, cli::ShellArguments const& arguments)
@@ -54,8 +54,8 @@ bool onExit(const std::string& command, cli::ShellArguments const& arguments)
 //
 // If this function returns true, the interpreter ends.
 //
-// cli::ShellArguments is really an alias of cli::parser::shellparser::
-// CommandArguments. See include/cli/shell.hpp for its definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::Arguments.
+// See include/cli/shell.hpp for its definition.
 //
 //    struct ShellArguments
 //    {
@@ -93,7 +93,7 @@ bool onExit(const std::string& command, cli::ShellArguments const& arguments)
 //    };
 //
 
-bool onAnotherCommands(const std::string& command,
+bool onOtherCommand(const std::string& command,
     cli::ShellArguments const& arguments)
 {
     using namespace cli::prettyprint;
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 
     // Set the callback function that will be invoked when the user inputs
     // any other command
-    interpreter.onRunCommand(&onAnotherCommands);
+    interpreter.onRunCommand(&onOtherCommand);
 
     // Run the interpreter
     interpreter.loop();
