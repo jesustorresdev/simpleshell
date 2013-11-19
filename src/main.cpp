@@ -39,9 +39,13 @@ const char PROMPT_TEXT[] = "$ ";
 // value if the variable exist. Or returns an empty string in other case.
 //
 
-std::string variableLookupCallback(const std::string& name)
+std::string onVariableLookup(const std::string& name)
 {
-    return std::string(getenv(name.c_str()));
+    char* value = getenv(name.c_str());
+    if (value != NULL) {
+        return std::string(value);
+    }
+    return std::string(); 
 }
 
 //
@@ -134,8 +138,7 @@ int main(int argc, char** argv)
     interpreter.promptText(PROMPT_TEXT);
 
     // Set the callback function that will be invoked for variable substitution
-    interpreter.setCallback<cli::callback::VariableLookupCallback>(
-       &variableLookupCallback);
+    interpreter.onVariableLookup(&onVariableLookup);
 
     // Set the callback function that will be invoked when the user inputs
     // the 'exit' command
