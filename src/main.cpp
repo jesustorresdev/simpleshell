@@ -1,7 +1,7 @@
 /*
  * main.cpp - Demo in C++ of a simple shell
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 
 const char INTRO_TEXT[] = "\x1b[2J\x1b[H"
                           "Simple Shell - C++ Demo\n"
-                          "Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>\n";
+                          "Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>\n";
 
 const char PROMPT_TEXT[] = "$ ";
 
@@ -50,12 +50,11 @@ std::string variableLookupCallback(const std::string& name)
 //
 // If this function returns true, the interpreter ends.
 //
-// cli::ShellArguments is an alias of cli::parser::shellparser::
-// CommandArguments. See include/cli/shell.hpp for its definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::Arguments.
+// See include/cli/shell.hpp for its definition.
 //
 
-bool exitCommandCallback(const std::string& command,
-    cli::ShellArguments const& arguments)
+bool onExit(const std::string& command, cli::ShellArguments const& arguments)
 {
     std::cout << "command:   " << command << std::endl;
     std::cout << "arguments: " << arguments << std::endl;
@@ -69,8 +68,8 @@ bool exitCommandCallback(const std::string& command,
 //
 // If this function returns true, the interpreter ends.
 //
-// cli::ShellArguments is really an alias of cli::parser::shellparser::
-// CommandArguments. See include/cli/shell.hpp for its definition.
+// cli::ShellArguments is an alias of cli::parser::shellparser::Arguments.
+// See include/cli/shell.hpp for its definition.
 //
 //    struct ShellArguments
 //    {
@@ -108,7 +107,7 @@ bool exitCommandCallback(const std::string& command,
 //    };
 //
 
-bool defaultCommandCallback(const std::string& command,
+bool onOtherCommand(const std::string& command,
     cli::ShellArguments const& arguments)
 {
     using namespace cli::prettyprint;
@@ -131,8 +130,8 @@ int main(int argc, char** argv)
     cli::ShellInterpreter interpreter;
 
     // Set the intro and prompt texts
-    interpreter.setIntroText(INTRO_TEXT);
-    interpreter.setPromptText(PROMPT_TEXT);
+    interpreter.introText(INTRO_TEXT);
+    interpreter.promptText(PROMPT_TEXT);
 
     // Set the callback function that will be invoked for variable substitution
     interpreter.setCallback<cli::callback::VariableLookupCallback>(
@@ -140,13 +139,11 @@ int main(int argc, char** argv)
 
     // Set the callback function that will be invoked when the user inputs
     // the 'exit' command
-    interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &exitCommandCallback, "exit");
+    interpreter.onRunCommand("exit", &onExit);
 
     // Set the callback function that will be invoked when the user inputs
     // any other command
-    interpreter.setCallback<cli::callback::DoCommandCallback>(
-        &defaultCommandCallback);
+    interpreter.onRunCommand(&onOtherCommand);
 
     // Run the interpreter
     interpreter.loop();

@@ -1,8 +1,8 @@
 /*
- * command.cpp - Simple line-oriented command interpreter which imitates the
- *               cmd.Cmd python class behavior
+ * simple.cpp - Simple line-oriented command interpreter which imitates the
+ *              cmd.Cmd python class behavior
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,13 @@
 #include <algorithm>
 #include <string>
 
-#include <cli/command.hpp>
+#include <cli/simple.hpp>
 
-namespace cli
+namespace cli { namespace parser { namespace simpleparser
 {
-    //
-    // Class CommandInterpreter
-    //
-
-    ParseError& CommandInterpreter::parse(
-        std::string::const_iterator& begin, std::string::const_iterator end,
-        std::string& command, std::string& arguments)
+    bool SimpleParser::operator()(std::string::const_iterator& begin,
+        std::string::const_iterator end, std::string& command,
+        std::string& arguments, std::string& error)
     {
         std::string::const_iterator i = find(begin, end, ' ');
         command = std::string(begin, i);
@@ -42,6 +38,6 @@ namespace cli
         }
         begin = end;
 
-        return parseError_;
+        return true;
     }
-}
+}}}

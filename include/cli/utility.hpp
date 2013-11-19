@@ -1,7 +1,7 @@
 /*
  * utility.hpp - Components useful to other parts of the library
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@
 #include <vector>
 
 #include <boost/shared_array.hpp>
+#include <boost/type_traits/is_convertible.hpp>
+#include <boost/utility/enable_if.hpp>
+
+#define translate(str) str  // TODO: Use Boost.Locale when available
 
 #include <cli/chart_literal.hpp>
 #include <cli/prettyprint.hpp>
@@ -36,7 +40,7 @@ namespace cli { namespace utility
     // calling program
     //
 
-    const char* getProgramInvocationShortName();
+    const char* programShortName();
 
     //
     // Functions for std::vector<std::string> to char*[] conversion
@@ -46,6 +50,26 @@ namespace cli { namespace utility
 
     boost::shared_array<char*> stdVectorStringToSmartArgV(
         const std::vector<std::string> &strings);
+
+    //
+    // Function for parse error type to std::string conversion
+    //
+
+    template <typename T>
+    typename boost::enable_if<
+        boost::is_convertible<T, std::string>, std::string>::type
+    parseErrorToStdString(T const& error)
+    {
+        return static_cast<std::string>(error);
+    }
+
+    template <typename T>
+    typename  boost::disable_if<
+        boost::is_convertible<T, std::string>, std::string>::type
+    parseErrorToStdString(T const& error)
+    {
+        return std::string(translate("parse error"));
+    }
 }}
 
 //

@@ -1,7 +1,7 @@
 /*
- * exceptions.hpp - Framework exceptions
+ * traits.hpp - Traits classes
  *
- *   Copyright 2010 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef EXCEPTIONS_HPP_
-#define EXCEPTIONS_HPP_
+#ifndef TRAITS_HPP_
+#define TRAITS_HPP_
 
-#include <stdexcept>
-
-namespace cli { namespace exception
+namespace cli { namespace traits
 {
-    //
-    // Class UnknownCallbackException
-    //
-
-    struct UnknownCallbackException : public std::logic_error
-    {
-
-        UnknownCallbackException(const std::string& callbackName)
-            : logic_error("Unknown interpreter callback: " + callbackName) {}
-
-        ~UnknownCallbackException() throw() {}
-    };
+    template <typename Parser>
+    struct ParserTraits
+    {};
 }}
 
-#endif /* EXCEPTIONS_HPP_ */
+#endif /* TRAITS_HPP_ */
