@@ -1,7 +1,7 @@
 /*
  * main.cpp - Demo in C++ of a simple shell
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ std::string onVariableLookup(const std::string& name)
     if (value != NULL) {
         return std::string(value);
     }
-    return std::string(); 
+    return std::string();
 }
 
 //

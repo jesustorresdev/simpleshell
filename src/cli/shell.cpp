@@ -1,7 +1,7 @@
 /*
  * shell.cpp - Interpreter designed to emulate a very simple shell
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,6 @@ namespace cli { namespace parser { namespace shellparser
         using phoenix::at;
         using phoenix::at_c;
         using phoenix::begin;
-        using phoenix::bind;
         using phoenix::empty;
         using phoenix::end;
         using phoenix::insert;
@@ -114,8 +113,8 @@ namespace cli { namespace parser { namespace shellparser
             eps[_a = false] >>
             dereference >> (
                 -lit('{')[_a = true] >
-                name[_val = bind(
-                    &ShellInterpreter::variableLookup, interpreter_, _1)]
+                name[_val = phoenix::bind(
+                    &ShellInterpreter::variableLookup, &interpreter_, _1)]
             ) >> ((eps(_a) > '}') | eps(!_a));
 
         quotedString %= '\'' >> *(char_ - '\'') > '\'';
@@ -132,19 +131,19 @@ namespace cli { namespace parser { namespace shellparser
         word = +(
             variable                    [_val += _1]          |
             quotedString
-                [_val += bind(&ShellParser::globEscape, _1)]  |
+                [_val += phoenix::bind(&ShellParser::globEscape, _1)]  |
             doubleQuotedString
-                [_val += bind(&ShellParser::globEscape, _1)]  |
+                [_val += phoenix::bind(&ShellParser::globEscape, _1)]  |
             escape                      [push_back(_val, _1)] |
             (char_ - space - special)   [push_back(_val, _1)]
         );
 
         expandedWord = word
-            [_val = bind(
-                &ShellInterpreter::pathnameExpansion, interpreter_, _1)];
+            [_val = phoenix::bind(
+                &ShellInterpreter::pathnameExpansion, &interpreter_, _1)];
 
         variableValue = expandedWord
-            [_val = bind(&ShellParser::stringsJoin, _1)];
+            [_val = phoenix::bind(&ShellParser::stringsJoin, _1)];
 
         unambiguousRedirection = eps(_r1);
         redirectionArgument = (
@@ -173,7 +172,7 @@ namespace cli { namespace parser { namespace shellparser
         );
         start = command [
              at_c<1>(_val) = _1,
-             at_c<0>(_val) = bind(&Arguments::getCommandName, _1)
+             at_c<0>(_val) = phoenix::bind(&Arguments::getCommandName, _1)
         ];
 
         character.name(translate("character"));
@@ -240,10 +239,10 @@ namespace cli
         using namespace glob;
 
 #if defined(_GNU_SOURCE)
-        Glob glob(pattern, Glob::EXPAND_BRACE_EXPRESSIONS |
-            Glob::NO_PATH_NAMES_CHECK | Glob::EXPAND_TILDE);
+        Glob glob(pattern, GlobFlags::EXPAND_BRACE_EXPRESSIONS |
+            GlobFlags::NO_PATH_NAMES_CHECK | GlobFlags::EXPAND_TILDE);
 #else
-        Glob glob(pattern, Glob::NO_PATH_NAMES_CHECK);
+        Glob glob(pattern, GlobFlags::NO_PATH_NAMES_CHECK);
 #endif /* _GNU_SOURCE */
 
         Glob::ErrorsType errors = glob.errors();

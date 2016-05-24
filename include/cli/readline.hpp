@@ -1,7 +1,7 @@
 /*
  * readline.hpp - Simple C++ wrapper around libreadline
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,10 @@
 //#endif
 
 #include <cstdio>
+#include <functional>
 #include <iostream>
+#include <memory>
 #include <string>
-
-#include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <cli/dl.hpp>
 
@@ -65,11 +64,11 @@ namespace cli { namespace readline
             void outStream(std::ostream& out);
 
         private:
-            boost::function<char* (const char*)> readline_;
-            boost::function<void (const char*)> add_history_;
-            boost::function<int (const char*)> read_history_;
-            boost::function<int (const char*)> write_history_;
-            boost::function<void ()> clear_history_;
+            std::function<char* (const char*)> readline_;
+            std::function<void (const char*)> add_history_;
+            std::function<int (const char*)> read_history_;
+            std::function<int (const char*)> write_history_;
+            std::function<void ()> clear_history_;
 
             FILE** rl_instream_;
             FILE** rl_outstream_;
@@ -91,7 +90,7 @@ namespace cli { namespace readline
                 const std::string& prompt = std::string()) const;
 
             bool isUsingLibrary()
-                { return readlineLibrary_; }
+                { return static_cast<bool>(readlineLibrary_); }
 
             //
             // I/O streams setters
@@ -109,7 +108,7 @@ namespace cli { namespace readline
             void clearHistory();
 
         private:
-            boost::scoped_ptr<ReadlineLibrary> readlineLibrary_;
+            std::unique_ptr<ReadlineLibrary> readlineLibrary_;
             std::istream* in_;
             std::ostream* out_;
 

@@ -1,7 +1,7 @@
 /*
  * utility.hpp - Private components useful to other parts of the library
  *
- *   Copyright 2010-2012 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,11 @@
 #include <ios>
 #include <string>
 
-#include <boost/system/error_code.hpp>
-
 namespace cli { namespace utility { namespace detail
 {
     bool isLineEmpty(const std::string& line);
     bool isStreamTty(const std::ios& stream);
 
 }}}
-
-namespace std
-{
-    using namespace boost::system;
-}
 
 #endif /* UTILITY_DETAIL_HPP_ */

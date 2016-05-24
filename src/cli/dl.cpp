@@ -1,7 +1,7 @@
 /*
  * dl.cpp - Programming interface to the dynamic linking loader
  *
- *   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,63 +29,56 @@ namespace dl
         #include <dlfcn.h>
     }
 
-    using namespace boost;
-
     //
     // Error handling support
     //
 
-    namespace LoaderError
+    std::error_code make_error_code(LoaderError e) noexcept
     {
+        return std::error_code(static_cast<int>(e), loaderCategory());
+    }
 
-        std::error_code make_error_code(LoaderErrorType e)
-        {
-            return std::error_code(static_cast<int>(e), loaderCategory());
-        }
-
-        std::error_condition make_error_condition(LoaderErrorType e)
-        {
-            return std::error_condition(static_cast<int>(e),
-                loaderCategory());
-        }
+    std::error_condition make_error_condition(LoaderError e) noexcept
+    {
+        return std::error_condition(static_cast<int>(e), loaderCategory());
     }
 
     //
     // Class LoaderCateogry
     //
 
-    const char* LoaderCategory::name() const
+    const char* LoaderCategory::name() const noexcept
     {
         return "dl";
     }
 
     std::string LoaderCategory::message(int ev) const
     {
-        switch (ev) {
-        case LoaderError::LIBRARY_ALREADY_LOADED:
+        if (LoaderError(ev) == LoaderError::LIBRARY_ALREADY_LOADED) {
             return gettext("A dynamic library is already loaded");
-        case LoaderError::LIBRARY_LOAD_FAILED:
-            return gettext("Failed to load dynamic library");
-        case LoaderError::LIBRARY_NOT_LOADED:
-            return gettext("No loaded dynamic library");
-        case LoaderError::SYMBOL_RESOLUTION_FAILED:
-            return gettext("Failed to resolve symbol");
-        default:
-            return gettext("Unknown dynamic linking loader error");
         }
+        if (LoaderError(ev) == LoaderError::LIBRARY_LOAD_FAILED) {
+            return gettext("Failed to load dynamic library");
+        }
+        if (LoaderError(ev) == LoaderError::LIBRARY_NOT_LOADED) {
+            return gettext("No loaded dynamic library");
+        }
+        if (LoaderError(ev) == LoaderError::SYMBOL_RESOLUTION_FAILED) {
+            return gettext("Failed to resolve symbol");
+        }
+        return gettext("Unknown dynamic linking loader error");
     }
 
     std::error_condition
-    LoaderCategory::default_error_condition(int ev) const
+    LoaderCategory::default_error_condition(int ev) const noexcept
     {
-        switch (ev) {
-        case LoaderError::LIBRARY_LOAD_FAILED:
+        if (LoaderError(ev) == LoaderError::LIBRARY_LOAD_FAILED) {
             return std::errc::permission_denied;
-        case LoaderError::SYMBOL_RESOLUTION_FAILED:
-            return std::errc::address_not_available;
-        default:
-            return std::error_condition(ev, *this);
         }
+        if (LoaderError(ev) == LoaderError::SYMBOL_RESOLUTION_FAILED) {
+            return std::errc::address_not_available;
+        }
+        return std::error_condition(ev, *this);
     }
 
     std::error_category& loaderCategory()
@@ -98,14 +91,7 @@ namespace dl
     // Class DynamicLibrary
     //
 
-    DynamicLibrary::DynamicLibrary() : libraryHandle_(NULL) {}
-
-    DynamicLibrary::~DynamicLibrary()
-    {
-        if (isLoad()) {
-            DynamicLibrary::dlclose(libraryHandle_);
-        }
-    }
+    DynamicLibrary::DynamicLibrary() : libraryHandle_(nullptr, &dlclose) {}
 
     void DynamicLibrary::load(const char *fileName, OpenFlags flags)
     {
@@ -115,12 +101,15 @@ namespace dl
             return;
         }
 
-        if ((flags & LAZY_BINDING) == 0) {
-            flags |= ONLOAD_BINDING;
+        if (! static_cast<bool>(flags & OpenFlags::LAZY_BINDING)) {
+            flags |= OpenFlags::ONLOAD_BINDING;
         }
 
-        libraryHandle_ = DynamicLibrary::dlopen(fileName, flags);
-        if (libraryHandle_ == NULL) {
+        void* handler = DynamicLibrary::dlopen(fileName, flags);
+        if (handler != nullptr) {
+            libraryHandle_ = LibraryHandle(handler, &dlclose);
+        }
+        else {
             lastErrorMessage_ = DynamicLibrary::dlerror();
             errorCode_ = LoaderError::LIBRARY_LOAD_FAILED;
         }
@@ -135,7 +124,7 @@ namespace dl
 
     void DynamicLibrary::load(enum SpecialFileNames fileName, OpenFlags flags)
     {
-        if (fileName == MAIN_PROGRAM) {
+        if (fileName == SpecialFileNames::MAIN_PROGRAM) {
             load(NULL, flags);
         }
     }

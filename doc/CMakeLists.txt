@@ -1,7 +1,7 @@
 #
 # CMakeLists.txt - CMake project file to build the documentation
 #
-#   Copyright 2011 Jesús Torres <jmtorres@ull.es>
+#   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

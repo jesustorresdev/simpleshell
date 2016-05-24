@@ -4,7 +4,7 @@
  *
  * Simple framework for writing line-oriented command interpreters
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@
 #include <cli/readline.hpp>
 #include <cli/traits.hpp>
 #include <cli/utility.hpp>
+
+#include <cli/detail/utility.hpp>
 
 namespace cli
 {
@@ -79,7 +81,7 @@ namespace cli
                 std::istream& in, std::ostream& out,
                 std::ostream& err = std::cerr, bool useReadline = true);
 
-            virtual ~CommandLineInterpreterBase() {};
+            virtual ~CommandLineInterpreterBase() {}
 
             //
             // Members to interpret command-line input
@@ -143,7 +145,7 @@ namespace cli
             // Hook methods invoked inside interpretOneLine()
             //
 
-            virtual void preRunCommand(std::string& line) {};
+            virtual void preRunCommand(std::string& line) {}
             virtual bool postRunCommand(bool isFinished,
                 const std::string& line);
             virtual bool parseError(ParseErrorType const& error,

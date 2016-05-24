@@ -1,7 +1,7 @@
 #
 # CMakeLists.txt - CMake project file
 #
-#   Copyright 2010-2011 Jesús Torres <jmtorres@ull.es>
+#   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ SET(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/lib")
 SET(CLI_LINK_LIBS ${CLI_LINK_LIBS} dl)
 
 # Compiler options
-ADD_DEFINITIONS(-O0 -g -Wall -fmessage-length=0)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -fmessage-length=0")
 # Enable parser debugging
 #ADD_DEFINITIONS(-DBOOST_SPIRIT_DEBUG) 
 
@@ -42,6 +42,20 @@ SET(DOCUMENTATION_SYSTEM_INPUT_LIST "src"
                                     "include"
                                     "include/cli"
 )
+
+#
+# Enable C++11 compiler support
+#
+INCLUDE(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+IF (COMPILER_SUPPORTS_CXX11)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ELSEIF (COMPILER_SUPPORTS_CXX0X)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+ELSE ()
+    MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+ENDIF ()
 
 #
 # Plataform checks
@@ -54,16 +68,15 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
 #
 # Find Boost. It is a requirement for the framework
 #
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-FIND_PACKAGE(Boost 1.44.0 REQUIRED COMPONENTS system thread)
+FIND_PACKAGE(Boost 1.44.0 REQUIRED)
 IF (Boost_FOUND)
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
     SET (CLI_LINK_LIBS ${CLI_LINK_LIBS} ${Boost_LIBRARIES})
-ENDIF (Boost_FOUND)
+ENDIF ()
 
 #
 # Build the project
 #
+ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(doc)

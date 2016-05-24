@@ -1,7 +1,7 @@
 /*
  * readline.cpp - Simple C++ wrapper around libreadline
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@
 #include <iostream>
 #include <string>
 
-#include <boost/system/system_error.hpp>
-
 #include <cli/detail/utility.hpp>
 #include <cli/readline.hpp>
 
@@ -30,7 +28,6 @@
 
 namespace cli { namespace readline
 {
-    using namespace boost;
     using namespace cli;
 
     //
@@ -66,7 +63,7 @@ namespace cli { namespace readline
         // will be resolved on demand.
         if (isLoad()) {
             resolveFunction(readline_, "readline");
-            if (lastError() != std::errc::success) {
+            if (lastError()) {
                 return;
             }
         }
@@ -92,9 +89,9 @@ namespace cli { namespace readline
 //
 
 #define READLINELIBRARY_FUNCTION(FUNCTION, SYMBOL)          \
-    if (FUNCTION.empty()) {                                 \
+    if (! FUNCTION) {                                       \
         resolveFunction(FUNCTION, SYMBOL);                  \
-        if (lastError() != std::errc::success) {            \
+        if (lastError()) {                                  \
             return;                                         \
         }                                                   \
     }
@@ -102,7 +99,7 @@ namespace cli { namespace readline
 #define READLINELIBRARY_VARIABLE(VARIABLE_PTR, SYMBOL)      \
     if (*VARIABLE_PTR == NULL) {                            \
         resolve(VARIABLE_PTR, SYMBOL);                      \
-        if (lastError() != std::errc::success) {            \
+        if (lastError()) {                                  \
             return;                                         \
         }                                                   \
     }
@@ -189,8 +186,7 @@ namespace cli { namespace readline
         : readlineLibrary_(useLibrary ? new ReadlineLibrary() : NULL),
           in_(&std::cin), out_(&std::cout)
     {
-        if (readlineLibrary_ &&
-            (readlineLibrary_->lastError() != std::errc::success)) {
+        if (readlineLibrary_ && readlineLibrary_->lastError()) {
             readlineLibrary_.reset();
         }
     }
@@ -228,7 +224,7 @@ namespace cli { namespace readline
         if (readlineLibrary_) {
             readlineLibrary_->inStream(in);
             std::error_code errorCode = readlineLibrary_->lastError();
-            if (errorCode != std::errc::success) {
+            if (errorCode) {
                 throw std::system_error(errorCode,
                     "unexpected error changing readline input stream");
             }
@@ -241,7 +237,7 @@ namespace cli { namespace readline
         if (readlineLibrary_) {
             readlineLibrary_->outStream(out);
             std::error_code errorCode = readlineLibrary_->lastError();
-            if (errorCode != std::errc::success) {
+            if (errorCode) {
                 throw std::system_error(errorCode,
                     "unexpected error changing readline output stream");
             }

@@ -1,7 +1,7 @@
 /*
  * glob.hpp - Find pathnames matching a pattern
  *
- *   Copyright 2010-2013 Jesús Torres <jmtorres@ull.es>
+ *   Copyright 2010-2016 Jesús Torres <jmtorres@ull.es>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@
 #define GLOB_HPP_
 
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
 #include <boost/filesystem.hpp>
-
-#include <cli/detail/utility.hpp>
 
 namespace glob
 {
@@ -34,6 +33,28 @@ namespace glob
     }
 
     using namespace boost;
+
+    //
+    // Options and flags
+    //
+
+    enum class GlobFlags
+    {
+        NONE                                = 0,
+        STOP_ON_ERRORS                      = GLOB_ERR,
+        END_DIRECTORIES_WITH_PATH_SEPARATOR = GLOB_MARK,
+        NO_PATH_NAMES_SORT                  = GLOB_NOSORT,
+        NO_PATH_NAMES_CHECK                 = GLOB_NOCHECK,
+        NO_ESCAPE_CHARACTER                 = GLOB_NOESCAPE,
+#if defined(_GNU_SOURCE)
+        NO_MAGIC                            = GLOB_NOMAGIC,
+        MATCH_LEADING_PERIOD                = GLOB_PERIOD,
+        FIND_DIRECTORIES_ONLY               = GLOB_ONLYDIR,
+        EXPAND_BRACE_EXPRESSIONS            = GLOB_BRACE,
+        EXPAND_TILDE                        = GLOB_TILDE,
+        EXPAND_TILDE_WITH_CHECK             = GLOB_TILDE_CHECK,
+#endif /* _GNU_SOURCE */
+    };
 
     //
     // Class Glob
@@ -46,26 +67,8 @@ namespace glob
             typedef std::vector<std::pair<
                 std::string, std::error_code> > ErrorsType;
 
-            enum GlobFlags
-            {
-                NONE                                = 0,
-                STOP_ON_ERRORS                      = GLOB_ERR,
-                END_DIRECTORIES_WITH_PATH_SEPARATOR = GLOB_MARK,
-                NO_PATH_NAMES_SORT                  = GLOB_NOSORT,
-                NO_PATH_NAMES_CHECK                 = GLOB_NOCHECK,
-                NO_ESCAPE_CHARACTER                 = GLOB_NOESCAPE,
-#if defined(_GNU_SOURCE)
-                NO_MAGIC                            = GLOB_NOMAGIC,
-                MATCH_LEADING_PERIOD                = GLOB_PERIOD,
-                FIND_DIRECTORIES_ONLY               = GLOB_ONLYDIR,
-                EXPAND_BRACE_EXPRESSIONS            = GLOB_BRACE,
-                EXPAND_TILDE                        = GLOB_TILDE,
-                EXPAND_TILDE_WITH_CHECK             = GLOB_TILDE_CHECK,
-#endif /* _GNU_SOURCE */
-            };
-
-            Glob(const std::string& pattern, GlobFlags flags = NONE);
-            virtual ~Glob() {};
+            Glob(const std::string& pattern, GlobFlags flags = GlobFlags::NONE);
+            virtual ~Glob() {}
 
             //
             // Overloaded cast operators to get the list of path names found
@@ -116,52 +119,42 @@ namespace glob
     }
 
     //
-    // Boolean operators overload for Glob::GlobFlags
+    // Boolean operators overload for GlobFlags
     //
 
-    inline Glob::GlobFlags
-    operator&(Glob::GlobFlags a, Glob::GlobFlags b)
+    inline GlobFlags operator&(GlobFlags a, GlobFlags b)
     {
-        return Glob::GlobFlags(static_cast<int>(a)
-            & static_cast<int>(b));
+        return GlobFlags(static_cast<int>(a) & static_cast<int>(b));
     }
 
-    inline Glob::GlobFlags
-    operator|(Glob::GlobFlags a, Glob::GlobFlags b)
+    inline GlobFlags operator|(GlobFlags a, GlobFlags b)
     {
-        return Glob::GlobFlags(static_cast<int>(a)
-            | static_cast<int>(b));
+        return GlobFlags(static_cast<int>(a) | static_cast<int>(b));
     }
 
-    inline Glob::GlobFlags
-    operator^(Glob::GlobFlags a, Glob::GlobFlags b)
+    inline GlobFlags operator^(GlobFlags a, GlobFlags b)
     {
-        return Glob::GlobFlags(static_cast<int>(a)
-            ^ static_cast<int>(b));
+        return GlobFlags(static_cast<int>(a) ^ static_cast<int>(b));
     }
 
-    inline Glob::GlobFlags
-    operator&=(Glob::GlobFlags &a, Glob::GlobFlags b)
+    inline GlobFlags operator&=(GlobFlags &a, GlobFlags b)
     {
         return a = a & b;
     }
 
-    inline Glob::GlobFlags
-    operator|=(Glob::GlobFlags &a, Glob::GlobFlags b)
+    inline GlobFlags operator|=(GlobFlags &a, GlobFlags b)
     {
         return a = a | b;
     }
 
-    inline Glob::GlobFlags
-    operator^=(Glob::GlobFlags a, Glob::GlobFlags b)
+    inline GlobFlags operator^=(GlobFlags a, GlobFlags b)
     {
         return a = a ^ b;
     }
 
-    inline Glob::GlobFlags
-    operator~(Glob::GlobFlags a)
+    inline GlobFlags operator~(GlobFlags a)
     {
-        return Glob::GlobFlags(~static_cast<int>(a));
+        return GlobFlags(~static_cast<int>(a));
     }
 }
 
