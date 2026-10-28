@@ -1,4 +1,5 @@
 # simpleshell
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23701214.svg)](https://doi.org/10.5281/zenodo.23701214)
 
 A C++ framework for writing line-oriented command interpreters in the style of a
 Unix shell.
